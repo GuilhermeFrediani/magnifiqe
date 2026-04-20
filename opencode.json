@@ -1,0 +1,8 @@
+{
+  "instructions": [
+    "./ai-rules/00-project-overview.md",
+    "./ai-rules/01-ai-workflow-strict.md",
+    "./ai-rules/03-token-economy.md",
+    "./ai-rules/05-debugging-mastery.md"
+  ]
+}
