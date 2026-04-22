@@ -4,12 +4,13 @@
     "./ai-rules/00-project-overview.md",
     "./ai-rules/01-ai-workflow-strict.md",
     "./ai-rules/03-token-economy.md",
-    "./ai-rules/05-debugging-mastery.md"
+    "./ai-rules/05-debugging-mastery.md",
+    "./ai-rules/10-llm-behavioral-rules.md"
   ],
   "mcp": {
     "stack-perfeita": {
       "type": "local",
-      "command": ["node", "./src/index.js"],
+      "command": ["node", "./src/index.js", "--rules-dir", "./ai-rules"],
       "enabled": true
     }
   }
