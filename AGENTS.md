@@ -17,6 +17,9 @@ Este projeto exige o mais alto rigor técnico e zero tolerância a alucinações
 - **Sem Achismos:** Nunca tente corrigir código usando `console.log("aqui")`. Use logs estruturados ou um `debugger;` de verdade (leia `ai-rules/05-debugging-mastery.md`).
 - **Provas Reais:** Sempre valide modificações rodando um linter local, typecheck ou lendo (`read`) o arquivo final modificado para atestar que o `edit` ocorreu de verdade.
 - **Citações:** Ao propor um padrão, mencione qual arquivo do projeto o inspirou.
+- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist = entrega incompleta.
+- **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
+- **Reactivation-Anchor:** Em comandos subsequentes, reforçar contexto com 2-3 linhas resumindo estado atual.
 
 ## 4. Divulgação Progressiva (Progressive Disclosure)
 NÃO carregue todas as regras de uma vez. Para economizar sua janela de contexto:
@@ -28,6 +31,7 @@ Leia os guias em `ai-rules/` usando a ferramenta `read` apenas quando o contexto
 - **Fundações e Padrões Ruins:** `ai-rules/09-bad-patterns-halt.md`
 - **Código Honesto:** `ai-rules/02-coding-standards.md`
 - **Economia de Tokens:** `ai-rules/03-token-economy.md`
+- **Regras Universais LLM:** `ai-rules/10-llm-behavioral-rules.md`
 
 Use *Skills* (localizadas em `.claude/skills/`) para tarefas de fluxo:
 - `build-test-verify`: Para testar ou lintar alterações.

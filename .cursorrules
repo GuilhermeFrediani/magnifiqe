@@ -8,6 +8,7 @@ Sempre que uma nova tarefa começar, você DEVE rodar ferramentas de leitura (`r
 2. `ai-rules/01-ai-workflow-strict.md` (A Bíblia Anti-Alucinação)
 3. `ai-rules/09-bad-patterns-halt.md` (A Lei da Fundação Podre)
 4. `ai-rules/02-coding-standards.md` (O Estilo Caveman)
+5. `ai-rules/10-llm-behavioral-rules.md` (Regras Universais + Bloqueio de Excitação)
 
 ## 2. REGRAS ANTI-ALUCINAÇÃO & ANTI-LOOP (CRÍTICO)
 - **Bloqueio de Tokens de Excitação e Filler Words:** É terminantemente **PROIBIDO** iniciar ou terminar respostas com "Humm, deixa eu pensar", "Vou analisar", "Entendido", "Aqui está o código", "Certo", etc. Vá direto à chamada da ferramenta (`edit`/`write`/`bash`) ou à resposta técnica direta e seca.
@@ -29,5 +30,10 @@ Consulte ANTES de escrever código (usando a ferramenta `read`):
 - **Segurança/Senhas:** `ai-rules/04-security-secrets.md`
 - **Backend:** `ai-rules/08-backend-architecture.md`
 
-## 5. REGRAS GERAIS DE EXECUÇÃO
+## 5. REQUIREMENT-LOCK & SESSION RULES
+- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist = entrega incompleta.
+- **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
+- **Reactivation-Anchor:** Em comandos subsequentes, reforçar contexto com 2-3 linhas resumindo estado atual.
+
+## 6. REGRAS GERAIS DE EXECUÇÃO
 - Modificou um arquivo? Rode o Linter ou Teste correspondente logo em seguida para garantir que o seu `edit` não gerou um "Bad Code" ou falha de sintaxe. Nunca confie cegamente que sua edição funcionou sem provar.

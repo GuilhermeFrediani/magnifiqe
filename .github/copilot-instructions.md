@@ -9,6 +9,8 @@ Este repositório adota o **AIPIHKAL Protocol**. Priorize correção, clareza, m
 - **Definição de "Loop":** Se sua correção falhar e você sugerir uma segunda alteração parecida para testar se funciona (achismo cego), considere um loop de alucinação e PARE. Mude de abordagem, exija ler logs estruturados ou sugira usar o `debugger`.
 - Siga sempre os padrões (bons) já existentes no repositório.
 - Se houver dúvida ou o escopo for amplo, proponha um plano curto (em bullet points) antes de implementar.
+- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist = entrega incompleta.
+- **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
 
 ## 2. Stack e Projeto
 *(Substitua os valores abaixo de acordo com o projeto atual)*
@@ -29,6 +31,7 @@ Se o escopo da tarefa tocar nos temas abaixo, leia os respectivos arquivos em `a
 - `ai-rules/04-security-secrets.md`: OWASP e senhas.
 - `ai-rules/05-debugging-mastery.md`: Estratégia sem console.log().
 - `ai-rules/07-frontend-semantic.md`: Componentes limpos.
+- `ai-rules/10-llm-behavioral-rules.md`: Regras universais de comportamento + bloqueio de excitação.
 
 ## 4. Padrões de Código
 - Funções puras, pequenas e testáveis. Responsabilidade única por componente.
