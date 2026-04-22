@@ -12,6 +12,30 @@ Sempre que estruturar o Layout, você **DEVE** utilizar as tags apropriadas para
 - Use `<aside>` para conteúdos indiretamente relacionados (sidebars, pull quotes).
 - **PROIBIDO:** Usar `<div>` e `<span>` indiscriminadamente como primeira opção, a menos que o agrupamento não tenha valor semântico e seja puramente para aplicação de estilo ou flexbox.
 
+```html
+<!-- ❌ BAD — sopa de divs, zero semântica -->
+<div class="top">
+  <div class="menu">
+    <div class="item">Home</div>
+    <div class="item">About</div>
+  </div>
+</div>
+<div class="content">...</div>
+<div class="bottom">© 2024</div>
+
+<!-- ✅ GOOD — HTML semântico, acessível, indexável -->
+<header>
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+</header>
+<main>...</main>
+<footer>© 2024</footer>
+```
+
 ## 2. Acessibilidade Agressiva (a11y)
 Se a IA construir a interface de forma semântica, a maior parte do trabalho a11y estará feito nativamente.
 - Imagens (`<img>` ou `<svg>`): Se possuírem significado visual importante, exigem obrigatoriamente um atributo `alt="descrição"`. Se forem puramente decorativas, use `alt=""` ou `aria-hidden="true"`.

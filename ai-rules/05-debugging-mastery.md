@@ -11,11 +11,14 @@
 - Proibido usar log cego tipo `console.log("entrou aqui")` ou `console.log(err)`.
 - Use **Logs Estruturados (Structured Logging)**:
   ```javascript
-  // ERRADO:
+  // ❌ BAD — log cego, sem contexto parseável
   console.log('User', userId, 'failed with', err);
+  console.log('entrou aqui');
+  console.log(err);
   
-  // CERTO (se necessário usar):
+  // ✅ GOOD — log estruturado, parseável, com contexto
   console.log({ msg: 'user_fetch_failed', userId, error: String(err) });
+  // OU use debugger; para parar e inspecionar estado real
   ```
 - **Preferência Absoluta:** Ao ajudar o usuário a debugar, sugira a inserção da palavra-chave `debugger;` ou ferramentas como o Inspector do Node (`--inspect`). Use Logpoints ou Breakpoints Condicionais se estiver codando junto na IDE.
 

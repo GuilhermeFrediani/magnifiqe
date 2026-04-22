@@ -7,6 +7,32 @@ A estrutura CI/CD deve ser tratada como um produto de software auditável: versi
 - **Sem Pipeline Quebrado:** O código sugerido pela IA ou escrito por ela DEVE respeitar os linters, formatações e tipagens que estarão no pipeline. 
 - **Obrigatório:** Faça a IA usar a ferramenta `build-test-verify` sempre que possível antes de afirmar "O recurso está concluído".
 
+```yaml
+# ❌ BAD — pipeline sem gate, qualquer código entra
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master  # sem versão fixa — risco supply chain
+      - run: npm install
+      - run: npm test  # se falhar, continua mesmo assim
+
+# ✅ GOOD — pipeline com gates de qualidade
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # versão fixa
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test  # falha aqui = bloqueia o merge
+```
+
 ## 2. Ferramentas e Infraestrutura Padrão
 Se for requisitada a criação de workflows (ex: `.github/workflows/*.yml`), siga o ecossistema moderno:
 - **GitHub Actions (CI):** A base principal de integração. Crie pipelines pequenos, rápidos, baseados em Matrix e Caching. Evite steps gigantes e ineficientes.

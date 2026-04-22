@@ -7,6 +7,16 @@ A IA está **ESTRITAMENTE PROIBIDA** de usar linguagem conversacional, preâmbul
 - **NÃO USE:** "Humm, deixa eu pensar...", "Vou analisar o código...", "Entendido!", "Aqui está o código atualizado", "Certo, vou fazer isso".
 - **AÇÃO DIRETA:** Se o usuário pedir "Crie a função X", a IA deve apenas invocar a ferramenta de edição (`edit`/`write`) ou devolver o bloco de código. Zero texto de acompanhamento, a menos que seja uma explicação técnica solicitada.
 
+```
+❌ BAD — 40 tokens de ruído:
+"Humm, deixa eu pensar... Entendido! Vou analisar o código e criar a função que você pediu. Aqui está:"
+function calculateTax(amount) { return amount * 0.1; }
+"Pronto! A função foi criada com sucesso."
+
+✅ GOOD — 0 tokens de ruído:
+function calculateTax(amount) { return amount * 0.1; }
+```
+
 ## 2. Resumo Semântico (Semantic Summarization) Obrigatório
 - Durante conversas longas ou tarefas de múltiplos passos, a IA **NÃO DEVE** carregar o histórico completo de tentativas falhas.
 - **Regra:** A cada 4 ou 5 interações numa mesma tarefa, ou após concluir uma refatoração difícil, a IA deve gerar um resumo interno muito curto (ex: "Estado: Endpoint X criado. Falta Frontend Y") e descartar mentalmente o código verboso e os logs de erro anteriores.

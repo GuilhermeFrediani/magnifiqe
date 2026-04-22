@@ -7,6 +7,25 @@
 - Todo payload de entrada (DTO) e saída deve ser tipado e validado usando bibliotecas de schemas rigorosas (Zod, Joi, Pydantic, Marshmallow).
 - Não passe o objeto da requisição cru para a camada de serviços (ex: `service.createUser(req.body)`). Passe objetos destrinchados e validados (`{ email, name, role }`).
 
+```js
+// ❌ BAD — God Route: validação + lógica + persistência tudo junto
+app.post("/users", async (req, res) => {
+  if (!req.body.email) return res.status(400).send("Missing email");
+  const exists = await db.user.findUnique({ where: { email: req.body.email } });
+  if (exists) return res.status(409).send("Exists");
+  const user = await db.user.create({ data: req.body });
+  await emailService.sendWelcome(user.email);
+  return res.json(user);
+});
+
+// ✅ GOOD — validação na borda, lógica no service, route só orquestra
+app.post("/users", async (req, res) => {
+  const payload = CreateUserSchema.parse(req.body); // Zod na borda
+  const user = await userService.create(payload);     // lógica isolada
+  return res.status(201).json(UserResponseSchema.parse(user));
+});
+```
+
 ## 2. Banco de Dados e Conexões
 - **Conexões (Pooling):** Certifique-se de que conexões de banco de dados não sejam abertas a cada requisição (instanciar cliente no topo do arquivo ou usar um Pool global).
 - **Transações (ACID):** Se um endpoint altera mais de uma tabela relacionada (ex: criar usuário + criar perfil associado), utilize `Transactions`. Nunca crie dados órfãos se a etapa B falhar.

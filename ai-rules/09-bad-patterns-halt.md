@@ -17,6 +17,29 @@ A IA está expressamente proibida de replicar, aceitar ou introduzir os seguinte
 - **Catch Vazio:** Engolir erros silenciosamente (`try { algo } catch (e) {}`). Exija um sistema de logging ou relance o erro formatado.
 - **Sopa de If/Else (Arrow Code):** Estruturas extremamente aninhadas. A IA deve aplicar `Early Returns` (retornos antecipados) e `Guard Clauses`.
 
+```js
+// ❌ BAD — God Function: 80 linhas fazendo tudo
+function handleRequest(data, db, cache, emailClient, logger) {
+  // valida + persiste + envia email + loga — tudo misturado
+  if (data.email) {
+    if (data.name) {
+      const user = db.create(data);
+      if (user) {
+        emailClient.send(user.email);
+        logger.log("created");
+        return user;
+      }
+    }
+  }
+}
+
+// ✅ GOOD — cada função faz UMA coisa
+function validateUser(data) { ... }       // ≤ 20 linhas
+function persistUser(db, data) { ... }   // ≤ 20 linhas
+function notifyUser(emailClient, user) { ... } // ≤ 10 linhas
+function logEvent(logger, event) { ... } // ≤ 5 linhas
+```
+
 ## 3. O Que é "Good Code" (Código Bom - O Padrão Ouro)
 Sempre que codificar, você deve buscar este estado ideal:
 - **Responsabilidade Única (SOLID):** Cada função/classe tem um propósito claro e explícito.

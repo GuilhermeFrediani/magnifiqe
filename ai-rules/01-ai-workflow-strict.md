@@ -28,6 +28,17 @@ Sempre que precisar de dados ou for alterar o sistema, aplique o ciclo rigoroso:
    - Se for positivo, prossiga. Se for negativo, **nunca invente um sucesso falso**. Tente um caminho alternativo 1 vez. Se falhar novamente, devolva o controle ao humano.
    - **Regra de Verificação Obrigatória:** Imediatamente após modificar ou criar um arquivo (`write` / `edit`), você **DEVE** rodar uma leitura de verificação (`read`, `cat` ou linter local) para provar que a alteração ocorreu e está sintaticamente válida. Nunca afirme "Eu modifiquei o arquivo" sem essa prova.
 
+```js
+// ❌ BAD — assumir que edit funcionou sem provar
+await edit({ file: "config.js", old: "v1", new: "v2" });
+// "Pronto, atualizei o config!" ← NUNCA sem verificar
+
+// ✅ GOOD — ler o arquivo após editar para provar
+await edit({ file: "config.js", old: "v1", new: "v2" });
+const result = await read("config.js");
+assert(result.includes("v2")); // prova real
+```
+
 ## 3. Gestão de Tarefas (Task Management) & Zero Loop
 
 - **Passo a Passo (One Step at a Time):** Ao receber um pedido complexo, quebre-o em uma lista (todo list). Resolva estritamente **um item de cada vez**. 

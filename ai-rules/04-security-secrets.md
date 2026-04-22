@@ -7,6 +7,17 @@
 - Use sempre variáveis de ambiente (`process.env.NOME_DA_CHAVE`).
 - Se um arquivo `.env` precisar ser criado, crie apenas um `.env.example` com valores fictícios. Alertar o humano se detectar um `.env` sendo comitado.
 
+```js
+// ❌ BAD — segredo hardcoded no código
+const dbUrl = "mongodb://admin:s3cret@prod-db.example.com:27017";
+const apiKey = "sk-abc123def456";
+
+// ✅ GOOD — segredo via variável de ambiente
+const dbUrl = process.env.DATABASE_URL;
+const apiKey = process.env.API_KEY;
+// .env.example contém: DATABASE_URL=mongodb://localhost:27017/dev
+```
+
 ## 2. OWASP Top 10 (Base 2025/2026)
 Ao escrever APIs ou interfaces, aplique obrigatoriamente:
 - **Broken Access Control & SSRF:** Nunca confie no input do usuário para acessar arquivos, URLs internas ou registros do banco de dados. Valide as permissões e o formato do dado na borda da aplicação (usando bibliotecas como Zod, Joi ou Pydantic).

@@ -9,6 +9,18 @@
   - Errado: `data`, `process()`, `handler`, `Manager`.
   - Certo: `userList`, `calculateTaxes()`, `handleUserSubmit`, `DatabaseConnection`.
 
+```js
+// ❌ BAD — nomes genéricos que não dizem nada
+const data = fetch(url);
+function process(item) { ... }
+const handler = () => {};
+
+// ✅ GOOD — nomes que explicam a intenção
+const userList = fetchUsers(url);
+function calculateTaxes(income) { ... }
+const handleUserSubmit = (event) => {};
+```
+
 ## 2. A Regra do Menor Esforço Mental
 - O código deve caber na cabeça de um desenvolvedor júnior exausto às 3 da manhã.
 - **Zero "Magic":** Não use metaprogramação pesada, reflexão (reflection), ou injeção de dependência mágica que esconde a origem da classe, a menos que o framework principal do projeto exija (ex: Angular, NestJS, Spring).
@@ -16,6 +28,30 @@
 
 ## 3. Estruturas Padrão e Simplicidade
 - **Early Return (Bouncer Pattern):** Reduza o aninhamento. Valide as falhas no topo da função e retorne imediatamente. O caminho feliz (Happy Path) deve ser sempre o último bloco da função, sem estar aninhado em um `else`.
+
+```js
+// ❌ BAD — arrow code, aninhamento excessivo
+function getUser(id) {
+  if (id) {
+    if (id > 0) {
+      const user = db.find(id);
+      if (user) {
+        return user;
+      } else {
+        return null;
+      }
+    }
+  }
+}
+
+// ✅ GOOD — early returns, happy path por último
+function getUser(id) {
+  if (!id) return null;
+  if (id <= 0) return null;
+  const user = db.find(id);
+  return user ?? null;
+}
+```
 - **imutabilidade Pragmática:** Sempre que possível, não modifique variáveis existentes. Crie novas variáveis. Use `const` (JS/TS), `val` (Java/Kotlin), `final` (Scala) por padrão. Use `let/var` apenas quando um loop ou acumulador for estritamente necessário (o que remete à regra 1).
 - **Try/Catch Específico:** Não engula erros com catch genérico silencioso. Se você capturar uma exceção, trate a falha específica esperada.
 
