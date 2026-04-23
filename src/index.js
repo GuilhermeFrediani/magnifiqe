@@ -392,7 +392,7 @@ server.tool(
 // Tool: dependency_validate
 server.tool(
   "dependency_validate",
-  "Checks if import/require/script/link references in a file actually exist on disk. Detects hallucinated imports. Use after generating or modifying a file.",
+  "Checks if relative import/require/script/link references (./x, ../x) in a file exist on disk. Detects hallucinated imports. Aliases (@/x, ~/, tsconfig paths) are NOT resolved. Use after generating or modifying a file.",
   { file_path: z.string().describe("Absolute path to the file to validate dependencies for.") },
   async ({ file_path }) => {
     const rateLimitHit = rateLimiter.check("dependency_validate");
@@ -422,6 +422,8 @@ server.tool(
 
     const fileDir = dirname(absPath);
     const missing = [];
+
+    // só resolve imports relativos — aliases (@/components, ~/, tsconfig paths) não suportados
 
     // JS/TS imports: import X from './path' or import './path'
     const importRegex = /import\s+(?:[\w{},*\s]+\s+from\s+)?['"](\.[^'"]+)['"]/g;
@@ -495,7 +497,7 @@ server.tool(
     return {
       content: [{
         type: "text",
-        text: "PASS — All imports and references resolve to existing files.",
+        text: "PASS — All relative imports and references resolve to existing files. (Aliases not checked.)",
       }],
     };
   }

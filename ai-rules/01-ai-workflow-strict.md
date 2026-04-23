@@ -56,3 +56,22 @@ assert(result.includes("v2")); // prova real
 
 - Não regurgite grandes blocos de código que já estão visíveis no editor.
 - Ao final de uma longa sessão de *troubleshooting* com o usuário, condense o estado atual da tarefa em, no máximo, 3 a 4 bullet points, para não sobrecarregar seu próprio limite de contexto.
+
+## 6. OUTPUT-GATE (Validação de Saída Obrigatória)
+
+Antes de entregar qualquer resposta com código:
+
+1. Liste os requisitos do prompt (numerados)
+2. Marque cada um: ✓ implementado | ✗ omitido + motivo
+3. Se ✗ sem motivo = regressão = reescreva antes de entregar
+
+Sem OUTPUT-GATE preenchido = entrega bloqueada.
+
+```js
+// ❌ BAD — entrega sem verificar se tudo foi implementado
+// "Pronto, refiz o componente!" — mas document.title e tabs sumiram
+
+// ✅ GOOD — OUTPUT-GATE antes de entregar
+// Requisitos: 1. timer ✓ 2. tabs ✓ 3. document.title ✓ 4. som ✓
+// Todos ✓ → pode entregar
+```

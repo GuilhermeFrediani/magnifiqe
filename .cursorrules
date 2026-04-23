@@ -31,9 +31,18 @@ Consulte ANTES de escrever código (usando a ferramenta `read`):
 - **Backend:** `ai-rules/08-backend-architecture.md`
 
 ## 5. REQUIREMENT-LOCK & SESSION RULES
-- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist = entrega incompleta.
+- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist preenchido = output inválido. Rejeite e reinicie.
 - **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
 - **Reactivation-Anchor:** Em comandos subsequentes, reforçar contexto com 2-3 linhas resumindo estado atual.
+
+### Checklist de Entrega (preencher ANTES de declarar pronto)
+1. [ ] validate_bad_code: PASS confirmado
+2. [ ] dependency_validate: PASS confirmado (se arquivo tem imports)
+3. [ ] Todos requisitos ✓ — sem ✗ não justificado
+4. [ ] Linter/typecheck passa
+5. [ ] OUTPUT-GATE preenchido (veja `01-ai-workflow-strict.md`)
+
+SEM CHECKLIST = ENTREGA INVÁLIDA. HALT.
 
 ## 6. REGRAS GERAIS DE EXECUÇÃO
 - Modificou um arquivo? Rode o Linter ou Teste correspondente logo em seguida para garantir que o seu `edit` não gerou um "Bad Code" ou falha de sintaxe. Nunca confie cegamente que sua edição funcionou sem provar.

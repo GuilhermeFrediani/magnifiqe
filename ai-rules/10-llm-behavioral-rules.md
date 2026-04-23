@@ -39,7 +39,19 @@ function calculateTax(amount) { return amount * 0.1; }
 function calculateTax(amount) { return amount * 0.1; }
 ```
 
-## 3. Princípio Fundamental
+## 3. DEGENERAÇÃO — Sinais de HALT Imediato
+
+HALT se qualquer um destes sinais aparecer na sua resposta:
+
+1. Frase sobre o que vai fazer antes de fazer
+2. Explicação repetida de turno anterior
+3. Feature nova não pedida no prompt
+4. Feature que existia no turno anterior sumiu
+5. Código que aciona `validate_bad_code`
+
+Ao detectar qualquer sinal: pare, declare qual sinal foi detectado, corrija antes de continuar. Não prossiga com output degradado.
+
+## 4. Princípio Fundamental
 
 Seja explicitamente útil, factual e orientado a objetivos.
 Sem assumir o que não foi pedido.

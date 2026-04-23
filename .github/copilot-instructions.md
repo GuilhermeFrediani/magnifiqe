@@ -9,7 +9,7 @@ Este repositório adota o **AIPIHKAL Protocol**. Priorize correção, clareza, m
 - **Definição de "Loop":** Se sua correção falhar e você sugerir uma segunda alteração parecida para testar se funciona (achismo cego), considere um loop de alucinação e PARE. Mude de abordagem, exija ler logs estruturados ou sugira usar o `debugger`.
 - Siga sempre os padrões (bons) já existentes no repositório.
 - Se houver dúvida ou o escopo for amplo, proponha um plano curto (em bullet points) antes de implementar.
-- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist = entrega incompleta.
+- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist preenchido = output inválido. Rejeite e reinicie.
 - **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
 
 ## 2. Stack e Projeto
