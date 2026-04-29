@@ -13,154 +13,120 @@
 - **Degeneração** → `validate_bad_code` (11 padrões), rate limit anti-loop
 - **Tokens vazios** → `10-llm-behavioral-rules.md` bloqueia "humm", "entendido"
 - **Regressão** → OUTPUT-GATE checklist obrigatório
+- **Padronização Global** → Script que unifica `.cursorrules` e `.windsurfrules`
 
-## 🚀 Instalação por IDE (2min)
+---
 
-### Cursor (mais popular)
+## 🚀 Instalação Rápida (Recomendada)
+
+Se você quer apenas usar o repositório como um centralizador de regras para todos os seus projetos (Opção "Fonte Única de Verdade"):
 
 ```bash
-# 1. Clone no projeto
-git clone https://github.com/GuilhermeFrediani/stack-perfeita .stack-perfeita
-cd .stack-perfeita && npm install
+# Clone na sua pasta principal de código
+git clone https://github.com/GuilhermeFrediani/magnifiqe.git ~/.stack-perfeita
+cd ~/.stack-perfeita
+npm install
 
-# 2. Cursor Settings → MCP → Add Custom
-# Cole isso:
+# Instale o script CLI globalmente
+npm link
 ```
+
+### Como vincular a um novo projeto
+Em qualquer pasta de projeto que você for trabalhar, simplesmente rode:
+
+```bash
+stack-perfeita
+```
+
+Isso irá gerar automaticamente os arquivos `.cursorrules`, `.windsurfrules` e `opencode.json` na raiz daquele projeto, com os comandos de **Ignition** já embutidos. 
+
+*(Veja o arquivo [PROMPTS.md](./PROMPTS.md) na raiz deste repositório para ver as palavras mágicas exatas a serem usadas no chat).*
+
+---
+
+## 🚀 Configuração Nativa por IDE
+
+### Cursor (mais popular)
+No Cursor Settings → MCP → Add Custom. Adicione a seguinte configuração (substitua o caminho):
 
 ```json
 {
   "mcpServers": {
     "stack-perfeita": {
       "command": "node",
-      "args": [".stack-perfeita/src/index.js", "--rules-dir", "./ai-rules"],
-      "cwd": ".stack-perfeita"
+      "args": ["C:/Users/SeuUsuario/.stack-perfeita/src/index.js"]
     }
   }
 }
 ```
-
 **Restart Cursor** → pronto!
 
 ### Windsurf
-
 1. Windsurf → **Plugins** (sidebar) → **MCP Marketplace**
-2. **Add Custom MCP** → `.windsurf/mcp_config.json`:
+2. **Add Custom MCP** → cole as configurações usando o mesmo caminho absoluto:
 
 ```json
 {
   "servers": {
     "stack-perfeita": {
       "command": "node",
-      "args": ["./src/index.js", "--rules-dir", "./ai-rules"]
+      "args": ["/caminho/absoluto/para/.stack-perfeita/src/index.js"]
     }
   }
 }
+```
+
+### Claude Desktop / Claude Code
+```bash
+claude mcp add stack-perfeita --command "node /caminho/absoluto/.stack-perfeita/src/index.js"
 ```
 
 ### Antigravity (Google)
+Antigravity auto-detecta MCP servers locais, basta passar o arquivo de rules.
 
-**Nativo via MCP Toolbox** — clone e rode:
+---
 
-```bash
-npm install && node src/index.js --rules-dir ./ai-rules
-```
+## 🎭 Como Instruir a LLM (Prompts Mágicos)
 
-Antigravity auto-detecta MCP servers locais.
+Temos um arquivo só para os prompts que você deve jogar no chat. **[Leia o PROMPTS.md](./PROMPTS.md)**.
+Mas em resumo:
 
-### Claude Code / OpenCode
+**Prompt 1: IGNITION (Abertura de Projeto)**
+Sempre que iniciar um projeto novo, cole no chat:
+> "🔧 ATIVE STACK-PERFEITA MCP AGORA. Chame \`get_rules('behavior')\`, leia o \`AGENTS.md\` na raiz. OUTPUT-GATE OBRIGATÓRIO."
 
-```bash
-# Global
-claude mcp add stack-perfeita --command "node ./src/index.js --rules-dir ./ai-rules"
+**Prompt 2: CHECKPOINT (Manutenção)**
+Se a IA começar a vacilar, tagarelar ou mandar código ruim:
+> "🚨 CHECKPOINT MCP. Pare de tagarelar. Chame \`validate_bad_code\` no último bloco e garanta ZERO FLUFF."
 
-# Ou .mcp.json no projeto
-```
+---
 
-```json
-{
-  "mcpServers": {
-    "stack-perfeita": {
-      "command": "node",
-      "args": ["./src/index.js", "--rules-dir", "./ai-rules"]
-    }
-  }
-}
-```
+## 🛠️ Ferramentas Expostas (10 tools)
 
-### VS Code (Copilot)
-
-`.vscode/mcp.json`:
-
-```json
-{
-  "servers": {
-    "stack-perfeita": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["./src/index.js", "--rules-dir", "./ai-rules"]
-    }
-  }
-}
-```
-
-## 🛠️ Ferramentas Expostas (6 tools)
-
-| Tool | O que faz | Keywords |
-|---|---|---|
-| `list_rules()` | Lista regras | - |
-| `get_rules(topic)` | Lê regra | `coding`, `bad`, `behavior`, `tokens`, `security` |
-| `validate_bad_code(code)` | **11 padrões** → PASS/HALT | any, God Function, innerHTML, etc. |
-| `dependency_validate(path)` | Imports existem? | alucinações de arquivo |
-| `validate_git_commit(msg)` | Conventional Commits | git hygiene |
-
-## 🎭 Como Instruir a LLM (prompt mágico)
-
-```
-Use MCP stack-perfeita:
-  get_rules('behavior') — SEMPRE primeiro
-  validate_bad_code(código) — ANTES de submeter
-  dependency_validate(path) — arquivos com imports
-  OUTPUT-GATE: checklist de features antes de entregar
-```
+| Tool | O que faz |
+|---|---|
+| `get_rules(topic)` | Lê regras centrais (`behavior`, `coding`, `bad`...) |
+| `list_skills()` | Lista scripts/playbooks específicos em `.claude/skills` |
+| `get_skill(name)` | Carrega instruções para uma tarefa específica |
+| `validate_bad_code(code)` | **11 padrões** → PASS/HALT (ex: any, console.log cego) |
+| `dependency_validate(path)`| Imports existem ou ela alucinou o caminho? |
+| `smart_outline(path)` | Lista todas as funções e assinaturas do arquivo |
+| `smart_unfold(path, name)` | Extrai só uma função específica de um arquivo longo |
+| `save_observation(obs)` | Salva decisões arquiteturais entre diferentes chats |
+| `search_observations(q)` | Busca memória do projeto |
+| `run_command(name)` | Roda um script estruturado de `ai-rules/commands` |
 
 ## 📊 Por que é diferente (vs outros MCPs)
 
-- **PASS/HALT** — não sugere, **PARA** código ruim
-- **Rate limit** — anti-loop automático
-- **Tokens de excitação BLOQUEADOS** — zero fluff
-- **OUTPUT-GATE** — checklist obrigatório, zero regressão
-- **11 padrões reais** — pega o que realmente quebra
-
-## 🧪 Teste Rápido
-
-```bash
-# Terminal do projeto
-npm install
-node src/index.js --rules-dir ./ai-rules
-
-# Cursor/Claude: "@stack-perfeita list_rules()"
-# Deve listar 10 regras + 3 tools de validação
-```
-
-## ❌ Problemas Comuns
-
-**"MCP não aparece"**
-- Restart completo da IDE
-- Verifique `node src/index.js --rules-dir ./ai-rules` roda sem erro
-
-**"Tools não listadas"**
-- Cursor: View → Output → MCP (logs)
-
-**Windows path issues**
-
-```json
-"args": ["src\\index.js", "--rules-dir", "ai-rules"]
-```
+- **PASS/HALT** — não sugere, **PARA** código ruim e devolve erro via JSON-RPC.
+- **Tokens de excitação BLOQUEADOS** — Foca em forçar a LLM a parar de dizer "Entendido, vou fazer isso!".
+- **OUTPUT-GATE** — checklist obrigatório antes da IA mandar a resposta final.
+- **Sistema de Sessão** — a IA lembra de aprendizados via `save_observation`.
 
 ## 🤝 Contribua
 
 1. **Novo padrão no `validate_bad_code`** → PR em `src/index.js`
-2. **Nova regra** → `ai-rules/11-nova-regra.md`
-3. **Exemplo bad/good** → só em `09-bad-patterns-halt.md`
+2. **Nova regra** → `ai-rules/12-nova-regra.md`
+3. **Novo Slash Command** → `ai-rules/commands/`
 
 **⭐ Star se ajudou seu workflow!**

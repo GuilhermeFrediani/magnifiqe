@@ -2,6 +2,9 @@
   "name": "stack-perfeita-mcp",
   "version": "1.0.0",
   "description": "MCP server that serves project AI rules to any IDE/LLM agent",
+  "bin": {
+    "stack-perfeita": "./bin/setup-ide.js"
+  },
   "type": "module",
   "main": "src/index.js",
   "bin": {
