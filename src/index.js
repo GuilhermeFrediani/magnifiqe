@@ -17,6 +17,9 @@
  *   validate_bad_code(code)   → checks code against bad patterns (PASS/HALT)
  *   validate_git_commit(msg)  → validates Conventional Commits format
  *   dependency_validate(path) → checks if imports/references exist on disk
+ *   run_command(name, args)   → executes a slash command from ai-rules/commands
+ *   save_observation(obs)     → saves an architectural decision to memory
+ *   search_observations(q)    → searches session memory using keyword
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -777,6 +780,91 @@ server.tool(
         type: "text",
         text: "PASS — All relative imports and references resolve to existing files. (Aliases not checked.)",
       }],
+    };
+  }
+);
+
+// ─── Slash Commands ───────────────────────────────────────────────────────────
+
+const COMMANDS_DIR = resolve(RULES_DIR, "commands");
+
+// Tool: run_command
+server.tool(
+  "run_command",
+  "Executes a predefined slash-command template from ai-rules/commands/. Useful for repetitive complex prompts (e.g. 'code-analysis', 'ci-deployment').",
+  { name: z.string().describe("Command name (without extension)."), args: z.string().optional().describe("Arguments to pass to the command template.") },
+  async ({ name, args }) => {
+    const safeName = name.replace(/\.\./g, "").replace(/[\\/]/g, "");
+    const cmdPath = resolve(COMMANDS_DIR, `${safeName}.md`);
+    if (!existsSync(cmdPath)) {
+      return { content: [{ type: "text", text: `HALT — Command not found: ${safeName}` }] };
+    }
+    let content = readFile(cmdPath);
+    if (args) {
+      content = content.replace(/\{\{\s*args\s*\}\}/g, args);
+    }
+    return {
+      content: [{
+        type: "text",
+        text: `## Command: ${safeName}\n\n${content}`,
+      }],
+    };
+  }
+);
+
+// ─── Session Memory (SQLite-less) ───────────────────────────────────────────
+
+const MEMORY_FILE = resolve(process.cwd(), ".claude", "session_memory.json");
+
+function loadMemory() {
+  if (!existsSync(MEMORY_FILE)) return [];
+  try {
+    return JSON.parse(readFileSync(MEMORY_FILE, "utf-8"));
+  } catch {
+    return [];
+  }
+}
+
+function saveMemory(data) {
+  try {
+    if (!existsSync(resolve(process.cwd(), ".claude"))) {
+      import("fs").then(fs => fs.mkdirSync(resolve(process.cwd(), ".claude"), { recursive: true }));
+    }
+    import("fs").then(fs => fs.writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2), "utf-8"));
+  } catch (e) {
+    process.stderr.write(`Failed to save memory: ${e.message}\n`);
+  }
+}
+
+// Tool: save_observation
+server.tool(
+  "save_observation",
+  "Saves an observation, learning, or architectural decision to the session memory. This persists across sessions.",
+  { observation: z.string().describe("The text of the observation to save.") },
+  async ({ observation }) => {
+    const mem = loadMemory();
+    mem.push({ timestamp: new Date().toISOString(), text: observation });
+    saveMemory(mem);
+    return {
+      content: [{ type: "text", text: "Observation saved successfully to session memory." }],
+    };
+  }
+);
+
+// Tool: search_observations
+server.tool(
+  "search_observations",
+  "Searches previously saved observations in the session memory using a keyword query.",
+  { query: z.string().describe("Keyword to search for in memory.") },
+  async ({ query }) => {
+    const mem = loadMemory();
+    const results = mem.filter(o => o.text.toLowerCase().includes(query.toLowerCase()));
+    if (results.length === 0) {
+      return { content: [{ type: "text", text: `No observations found matching: "${query}"` }] };
+    }
+    const lines = results.map(o => `[${o.timestamp}] ${o.text}`);
+    return {
+      content: [{ type: "text", text: `## Observations matching "${query}"\n\n${lines.join("\n")}` }],
     };
   }
 );
