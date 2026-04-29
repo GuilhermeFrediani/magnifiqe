@@ -17,8 +17,10 @@ Before answering the first user prompt in a new session:
 1. Call \`stack-perfeita_get_rules({ topic: "10-llm-behavioral-rules.md", mode: "summary" })\`
 2. Call \`stack-perfeita_list_skills()\`
 
-## 🔴 GLOBAL CONSTRAINTS (ZERO FLUFF)
-- NEVER use conversational filler ("Humm, let me think", "Here is the code", "Entendido").
+## 🔴 CAVEMAN MODE (ZERO FLUFF)
+- NEVER use conversational filler ("Humm", "Here is the code", "Entendido").
+- BE EXTREMELY TERSE. Use fragments. Drop articles. Use arrows (->) for causality.
+- THE "RULE OF 2": If a command/test fails TWICE for the same reason, HALT. Do not try a 3rd time blindly.
 - ALWAYS run \`stack-perfeita_validate_bad_code\` BEFORE outputting any code block.
 - ALWAYS run \`stack-perfeita_dependency_validate\` AFTER suggesting new imports.
 
@@ -27,7 +29,7 @@ Do not deliver a response without checking:
 - [ ] Requirements met?
 - [ ] validate_bad_code: PASS?
 - [ ] dependency_validate: PASS?
-- [ ] Tokens de excitação removed?
+- [ ] Caveman Mode / Zero tokens de excitação?
 `;
 
 const configs = [

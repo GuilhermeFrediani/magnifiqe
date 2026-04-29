@@ -1,4 +1,4 @@
-# 🎯 Prompts Oficiais: Stack-Perfeita
+# 🎯 Prompts Oficiais: Stack-Perfeita (CAVEMAN EDITION)
 
 Guarde estes prompts em um atalho de teclado (como o *Snippets* do Raycast, Espanso ou Beeftext) para invocar a IA instantaneamente e forçar o comportamento do MCP.
 
@@ -6,46 +6,42 @@ Guarde estes prompts em um atalho de teclado (como o *Snippets* do Raycast, Espa
 *Use isso na primeiríssima mensagem do chat ao iniciar uma nova task ou projeto.*
 
 \`\`\`text
-🔧 ATIVE STACK-PERFEITA MCP AGORA
+🔧 STACK-PERFEITA MCP ACTIVE. 
 
-1. Chame \`get_rules("behavior")\` ← SEMPRE PRIMEIRO
-2. Leia o \`AGENTS.md\` na raiz.
-3. OUTPUT-GATE OBRIGATÓRIO PARA SUAS RESPOSTAS:
-   - [ ] Requisitos do meu prompt ✓
-   - [ ] \`validate_bad_code\` rodou e deu PASS
-   - [ ] \`dependency_validate\` rodou (se houver imports)
-   - [ ] Zero "Tokens de Excitação" (Sem "Entendido", "Vou analisar", "Aqui está")
+1. Chame \`get_rules("behavior")\` ← LER AGORA.
+2. MODO: CAVEMAN ULTRA (Zero fluff, short synonyms, fragmentos, setas ->)
+3. REGRA DE 2 (Anti-Loop): Se errar 2x igual -> HALT -> Reporte.
 
-Apenas responda "MCP ACTIVE. ZERO FLUFF ENFORCED." e aguarde meu comando.
+OUTPUT-GATE OBRIGATÓRIO (No final de toda resposta):
+- [ ] Requisitos do meu prompt ✓
+- [ ] \`validate_bad_code\` = PASS
+- [ ] \`dependency_validate\` = PASS
+- [ ] Zero "Tokens de Excitação" ✓
+
+CONFIRMAÇÃO: Apenas responda "CAVEMAN MCP ACTIVE. ZERO FLUFF ENFORCED." e aguarde meu comando.
 \`\`\`
 
 ---
 
 ## 2. O "Checkpoint Prompt" (Correção de Rota)
-*Use isso quando a IA começar a ficar "preguiçosa", tagarela, gerar código ruim ou esquecer das regras no meio de uma refatoração longa.*
+*Use isso quando a IA começar a ficar "preguiçosa", tagarela, dar voltas, ou falhar na Regra de 2.*
 
 \`\`\`text
-🚨 CHECKPOINT MCP: RETORNO ÀS REGRAS
+🚨 CHECKPOINT MCP: RETORNO AO MODO CAVEMAN.
 
-1. Pare de tagarelar. Respostas 100% técnicas daqui em diante.
-2. Chame \`validate_bad_code\` no último bloco de código que você gerou. Deu PASS?
-3. Se detectou desvio ou alucinação: HALT. Corrija o código imediatamente baseado no \`get_rules("coding")\`.
-4. Faça o checklist silencioso na sua mente. Apenas entregue o código ou bash corrigido.
+1. Parar fala inútil agora. Volte p/ Regras -> `get_rules("behavior")`.
+2. Chame \`validate_bad_code\` no ğltimo bloco. Deu PASS?
+3. Causa raiz falha anterior -> Correção exata. Sem tentativa cega.
+4. Responda APENAS código ou comando bash corrigido. Sem preâmbulo.
 \`\`\`
 
 ---
 
-## 3. O "Task Master Prompt" (Delegação Complexa)
-*Use quando for pedir algo grande para garantir que ela não alucine e planeje antes.*
+## 3. Compressão de Memória / Documentação (Novo!)
+*Use quando o contexto estiver lotado com textos longos que a IA precisa ler, para economizar tokens de input.*
 
 \`\`\`text
-📋 NOVA TAREFA. MODO PLANEJAMENTO PRIMEIRO.
+🧹 OTIMIZAÇÃO DE TOKENS.
 
-Requisito: [ESCREVA SUA TAREFA AQUI]
-
-Ação Exigida:
-1. NÃO escreva o código ainda.
-2. Use \`smart_outline\` e \`grep\` para entender onde mexer.
-3. Crie um plano em Bullet Points (Máx 4 linhas).
-4. Aguarde minha aprovação ('Y') para executar usando \`edit\`/\`write\`.
+Use a tool \`compress_markdown("caminho/do/arquivo.md")\` antes de ler qualquer documentação longa desta tarefa. Nunca use \`read\` normal em docs maiores que 100 linhas.
 \`\`\`

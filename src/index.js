@@ -25,7 +25,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -66,6 +66,21 @@ function readFile(filePath) {
   } catch {
     return null;
   }
+}
+
+/** 
+ * Minifies markdown/text output to save tokens:
+ * - Removes markdown comments <!-- -->
+ * - Collapses multiple blank lines to a single blank line
+ * - Trims trailing whitespaces
+ */
+function minifyTokens(text) {
+  if (!text) return text;
+  return text
+    .replace(/<!--[\s\S]*?-->/g, '') // remove HTML comments
+    .replace(/[ \t]+$/gm, '')        // trim trailing spaces
+    .replace(/\n{3,}/g, '\n\n')      // max 2 newlines
+    .trim();
 }
 
 function listRuleFiles() {
@@ -332,6 +347,14 @@ server.tool(
           text: `## ${result.file}\n\n${desc}\n\nCall get_rules(topic, mode='full') for complete content.`,
         }],
       };
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: `Instructions from: ${result.path}\n` + minifyTokens(result.content),
+      }],
+    };
     }
 
     return {
@@ -870,6 +893,36 @@ server.tool(
 );
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+
+// Tool: compress_markdown
+server.tool(
+  "compress_markdown",
+  "Reads a markdown file (.md) from disk, removes HTML comments, excess whitespaces, and normalizes blank lines to aggressively save input tokens without altering the original file on disk. Returns the minified string.",
+  { path: z.string().describe("Absolute path to the markdown file to compress in-memory.") },
+  async ({ path }) => {
+    const rateLimitHit = rateLimiter.check("compress_markdown");
+    if (rateLimitHit) {
+      return { content: [{ type: "text", text: rateLimitHit }] };
+    }
+
+    const absPath = resolve(path);
+    if (!existsSync(absPath)) {
+      return { content: [{ type: "text", text: `HALT — File not found: ${absPath}` }] };
+    }
+
+    const content = readFile(absPath);
+    if (!content) {
+      return { content: [{ type: "text", text: `HALT — Could not read file: ${absPath}` }] };
+    }
+
+    const minified = minifyTokens(content);
+    const savings = content.length - minified.length;
+
+    return {
+      content: [{ type: "text", text: `[Compressed ${savings} chars away from context]\n\n${minified}` }],
+    };
+  }
+);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
