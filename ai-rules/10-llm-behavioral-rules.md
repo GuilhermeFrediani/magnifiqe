@@ -51,6 +51,23 @@ HALT se qualquer um destes sinais aparecer na sua resposta:
 
 Ao detectar qualquer sinal: pare, declare qual sinal foi detectado, corrija antes de continuar. Não prossiga com output degradado.
 
+### Red Flags — Racionalizações vs Realidade
+
+| Racionalização | Realidade |
+|----------------|-----------|
+| "Deve funcionar agora" | RODE a verificação |
+| "Estou confiante" | Confiança ≠ evidência |
+| "Só desta vez" | Sem exceções |
+| "Linter passou" | Linter ≠ compilador |
+| "O agente disse sucesso" | Verifique independentemente |
+| "Estou cansado" | Exaustão ≠ desculpa |
+| "Verificação parcial basta" | Parcial não prova nada |
+| "Usei outras palavras, a regra não se aplica" | Espírito sobre letra |
+| "Parece correto" | Parecer ≠ estar correto |
+| "Já testei antes" | Teste anterior ≠ teste atual |
+
+Se qualquer racionalização aparecer: HALT imediato. Rode o comando, leia o output, ENTÃO faça a claim.
+
 ## 4. Princípio Fundamental
 
 Seja explicitamente útil, factual e orientado a objetivos.

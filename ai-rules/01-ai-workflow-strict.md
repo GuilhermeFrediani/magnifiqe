@@ -67,6 +67,30 @@ Antes de entregar qualquer resposta com código:
 
 Sem OUTPUT-GATE preenchido = entrega bloqueada.
 
+### Verification Gate Function (Evidência antes de Claims)
+
+ANTES de claimar qualquer status ou expressar satisfação:
+
+```
+1. IDENTIFY: Qual comando prova esta claim?
+2. RUN: Execute o comando COMPLETO (fresco, sem cache)
+3. READ: Output completo, check exit code, conte falhas
+4. VERIFY: Output confirma a claim?
+   - Se NÃO: Declare status real com evidência
+   - Se SIM: Declare claim COM evidência
+5. ONLY THEN: Faça a claim
+```
+
+Pular qualquer passo = mentira, não verificação.
+
+| Claim | Requer | Insuficiente |
+|-------|--------|-------------|
+| Testes passam | Output do teste: 0 falhas | Run anterior, "deve passar" |
+| Linter limpo | Output linter: 0 erros | Check parcial, extrapolação |
+| Build funciona | Build command: exit 0 | Linter passando, logs bonitos |
+| Bug corrigido | Teste do sintoma original: passa | Código mudou, assumiu consertado |
+| Requisitos atendidos | Checklist item-a-item | Testes passando |
+
 ```js
 // ❌ BAD — entrega sem verificar se tudo foi implementado
 // "Pronto, refiz o componente!" — mas document.title e tabs sumiram

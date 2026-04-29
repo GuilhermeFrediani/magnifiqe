@@ -22,6 +22,11 @@ import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
+// ─── MCP Protocol Protection ─────────────────────────────────────────────────
+// stdout is reserved for JSON-RPC. Any console.log breaks the protocol.
+const originalConsoleLog = console.log;
+console.log = (...args) => process.stderr.write(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n');
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -509,3 +514,26 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 
 process.stderr.write(`stack-perfeita-mcp started\nRules dir: ${RULES_DIR}\n`);
+
+// ─── Orphan Detection ─────────────────────────────────────────────────────────
+// Auto-exit when parent process dies (stdin closed / ppid changed)
+// Prevents zombie MCP server processes when IDE exits unexpectedly.
+
+function gracefulExit(reason) {
+  process.stderr.write(`stack-perfeita-mcp exiting: ${reason}\n`);
+  process.exit(0);
+}
+
+process.stdin.on('end', () => gracefulExit('stdin ended (parent closed)'));
+process.stdin.on('close', () => gracefulExit('stdin closed'));
+
+// ppid-based orphan detection (Unix only; no-op on Windows)
+if (process.platform !== 'win32') {
+  const initialPpid = process.ppid;
+  const heartbeat = setInterval(() => {
+    if (process.ppid !== initialPpid) {
+      gracefulExit(`parent died (ppid ${initialPpid} → ${process.ppid})`);
+    }
+  }, 30_000);
+  if (heartbeat.unref) heartbeat.unref(); // don't keep event loop alive
+}
