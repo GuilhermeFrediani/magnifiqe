@@ -10,6 +10,10 @@
  *   list_rules()              → lists all available rule files
  *   get_rules(topic)          → returns content of a specific rules file
  *   get_context(module_path)  → returns CONTEXT.md for a given module path
+ *   list_skills()             → lists all available agent skills
+ *   get_skill(name)           → returns content of a specific skill
+ *   smart_outline(path)       → structural outline of a source file (symbols only)
+ *   smart_unfold(path, name)  → expand a specific symbol's body from a file
  *   validate_bad_code(code)   → checks code against bad patterns (PASS/HALT)
  *   validate_git_commit(msg)  → validates Conventional Commits format
  *   dependency_validate(path) → checks if imports/references exist on disk
@@ -39,6 +43,7 @@ const RULES_DIR = rulesDirFlag !== -1
   : resolve(process.cwd(), "ai-rules");
 
 const SRC_DIR = resolve(RULES_DIR, "../src");
+const SKILLS_DIR = resolve(process.cwd(), ".claude/skills");
 
 // ─── Security ───────────────────────────────────────────────────────────────
 
@@ -80,6 +85,33 @@ function getRuleByTopic(topic) {
   if (fuzzy) return { file: fuzzy, content: readFile(join(RULES_DIR, fuzzy)) };
 
   return null;
+}
+
+// ─── Skill Helpers ───────────────────────────────────────────────────────────
+
+function parseSkillFrontmatter(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return {};
+  const fm = {};
+  for (const line of match[1].split("\n")) {
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    const val = line.slice(idx + 1).trim();
+    fm[key] = val;
+  }
+  return fm;
+}
+
+function listSkillFiles() {
+  try {
+    return readdirSync(SKILLS_DIR, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => ({ dir: d.name, path: join(SKILLS_DIR, d.name, "SKILL.md") }))
+      .filter(s => existsSync(s.path));
+  } catch {
+    return [];
+  }
 }
 
 // ─── Topic Map (keyword → real filename) ────────────────────────────────────
@@ -253,9 +285,9 @@ server.tool(
 // Tool: get_rules
 server.tool(
   "get_rules",
-  "Returns the content of a specific rules file. Use topic keywords like: coding, workflow, bad, architecture, security, tokens, behavior, frontend, backend, debugging.",
-  { topic: z.string().describe("Topic keyword or filename. Examples: 'coding', 'workflow', 'bad', 'behavior', '02-coding-standards.md'") },
-  async ({ topic }) => {
+  "Returns the content of a specific rules file. Use topic keywords like: coding, workflow, bad, architecture, security, tokens, behavior, frontend, backend, debugging. Mode 'summary' returns description only (~20 tokens); 'full' returns entire content.",
+  { topic: z.string().describe("Topic keyword or filename. Examples: 'coding', 'workflow', 'bad', 'behavior', '02-coding-standards.md'"), mode: z.enum(["summary", "full"]).default("full").describe("Return mode: 'summary' = description only (token-efficient), 'full' = entire file content") },
+  async ({ topic, mode }) => {
     const rateLimitHit = rateLimiter.check("get_rules");
     if (rateLimitHit) {
       return { content: [{ type: "text", text: rateLimitHit }] };
@@ -284,6 +316,17 @@ server.tool(
         content: [{
           type: "text",
           text: `No rules found for topic: "${topic}"\n\nAvailable files:\n${files.map(f => `- ${f}`).join("\n")}\n\nTopic keywords: ${Object.keys(TOPIC_MAP).join(", ")}`,
+        }],
+      };
+    }
+
+    // Progressive disclosure: summary mode returns description only
+    if (mode === "summary") {
+      const desc = RULE_DESCRIPTIONS[result.file] || "Custom rule file";
+      return {
+        content: [{
+          type: "text",
+          text: `## ${result.file}\n\n${desc}\n\nCall get_rules(topic, mode='full') for complete content.`,
         }],
       };
     }
@@ -389,6 +432,236 @@ server.tool(
       content: [{
         type: "text",
         text: "HALT — Invalid format. Must be: type(scope): description\nValid types: feat, fix, docs, style, refactor, perf, test, chore",
+      }],
+    };
+  }
+);
+
+// Tool: list_skills
+server.tool(
+  "list_skills",
+  "Lists all available agent skills (SKILL.md files in .claude/skills/). Skills are composable, discoverable task playbooks that the agent invokes before responding.",
+  {},
+  async () => {
+    const skills = listSkillFiles();
+
+    if (skills.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: `No skills found in: ${SKILLS_DIR}\nCreate .claude/skills/<name>/SKILL.md with YAML frontmatter (name, description).`,
+        }],
+      };
+    }
+
+    const lines = skills.map(s => {
+      const content = readFile(s.path);
+      const fm = content ? parseSkillFrontmatter(content) : {};
+      const name = fm.name || s.dir;
+      const desc = fm.description || "No description";
+      const compat = fm.compatibility || "";
+      return `- **${name}** — ${desc}${compat ? ` [${compat}]` : ""}`;
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: `## Available skills in: ${SKILLS_DIR}\n\n${lines.join("\n")}\n\nUse get_skill(name) to read a skill's full content.`,
+      }],
+    };
+  }
+);
+
+// Tool: get_skill
+server.tool(
+  "get_skill",
+  "Returns the full content of a specific skill. Use skill name or directory name. Skills guide the agent through specialized workflows.",
+  { name: z.string().describe("Skill name or directory name. Examples: 'build-test-verify', 'git-commit', 'core-conventions'") },
+  async ({ name }) => {
+    const safeName = name.replace(/\.\./g, "").replace(/[\\/]/g, "");
+    const skillPath = safeResolvePath(SKILLS_DIR, join(safeName, "SKILL.md"));
+
+    if (!existsSync(skillPath)) {
+      const available = listSkillFiles().map(s => s.dir);
+      return {
+        content: [{
+          type: "text",
+          text: `Skill not found: "${name}"\n\nAvailable skills:\n${available.map(a => `- ${a}`).join("\n")}`,
+        }],
+      };
+    }
+
+    const content = readFile(skillPath);
+    return {
+      content: [{
+        type: "text",
+        text: `## Skill: ${safeName}\n\n${content}`,
+      }],
+    };
+  }
+);
+
+// ─── Smart Code Reading Helpers ───────────────────────────────────────────────
+
+const SYMBOL_PATTERNS = {
+  js: [
+    { regex: /^(export\s+)?(default\s+)?(async\s+)?function\s+(\w+)\s*\([^)]*\)/m, kind: "function" },
+    { regex: /^(export\s+)?(default\s+)?(async\s+)?function\s*\*\s*(\w+)\s*\([^)]*\)/m, kind: "generator" },
+    { regex: /^(export\s+)?(default\s+)?const\s+(\w+)\s*=\s*(async\s+)?\([^)]*\)\s*=>/m, kind: "arrow" },
+    { regex: /^(export\s+)?(default\s+)?const\s+(\w+)\s*=\s*(async\s+)?function/m, kind: "function-expr" },
+    { regex: /^(export\s+)?(default\s+)?class\s+(\w+)/m, kind: "class" },
+    { regex: /^(export\s+)?(default\s+)?interface\s+(\w+)/m, kind: "interface" },
+    { regex: /^(export\s+)?type\s+(\w+)\s*=/m, kind: "type" },
+    { regex: /^(export\s+)?enum\s+(\w+)/m, kind: "enum" },
+    { regex: /^\s+(async\s+)?(\w+)\s*\([^)]*\)\s*\{/m, kind: "method" },
+  ],
+  py: [
+    { regex: /^(async\s+)?def\s+(\w+)\s*\(/m, kind: "function" },
+    { regex: /^class\s+(\w+)/m, kind: "class" },
+    { regex: /^(\w+)\s*=\s*(lambda|async\s+lambda)/m, kind: "lambda" },
+  ],
+};
+
+function getFileLang(filePath) {
+  if (/\.(js|ts|jsx|tsx|mjs|cjs)$/.test(filePath)) return "js";
+  if ( /\.py$/.test(filePath)) return "py";
+  return null;
+}
+
+function extractSymbols(content, lang) {
+  const patterns = SYMBOL_PATTERNS[lang] || [];
+  const symbols = [];
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    for (const p of patterns) {
+      const match = lines[i].match(p.regex);
+      if (match) {
+        const name = match[match.length - 1];
+        if (name && !["if", "for", "while", "switch", "catch", "else", "return", "throw", "new"].includes(name)) {
+          symbols.push({ name, kind: p.kind, line: i + 1, signature: lines[i].trim() });
+        }
+      }
+    }
+  }
+  return symbols;
+}
+
+function extractSymbolBody(content, symbolName, lang) {
+  const lines = content.split("\n");
+  const patterns = SYMBOL_PATTERNS[lang] || [];
+
+  for (let i = 0; i < lines.length; i++) {
+    for (const p of patterns) {
+      const match = lines[i].match(p.regex);
+      if (match && match[match.length - 1] === symbolName) {
+        // Found symbol at line i. Extract body by indentation/brace matching.
+        const startLine = i;
+        let endLine = i;
+        const sig = lines[i].trim();
+
+        if (lang === "py") {
+          // Python: body is indented below the def/class
+          const baseIndent = lines[i].search(/\S/);
+          for (let j = i + 1; j < lines.length; j++) {
+            const lineIndent = lines[j].search(/\S/);
+            if (lineIndent <= baseIndent && lines[j].trim() !== "") break;
+            endLine = j;
+          }
+        } else {
+          // JS/TS: brace matching
+          let depth = 0;
+          let foundOpen = false;
+          for (let j = i; j < lines.length; j++) {
+            for (const ch of lines[j]) {
+              if (ch === "{") { depth++; foundOpen = true; }
+              if (ch === "}") depth--;
+            }
+            endLine = j;
+            if (foundOpen && depth === 0) break;
+          }
+        }
+
+        return { startLine: startLine + 1, endLine: endLine + 1, signature: sig, body: lines.slice(startLine, endLine + 1).join("\n") };
+      }
+    }
+  }
+  return null;
+}
+
+// Tool: smart_outline
+server.tool(
+  "smart_outline",
+  "Get structural outline of a file — shows all symbols (functions, classes, methods, types) with signatures. Much cheaper than reading the full file. Supports JS/TS/Python.",
+  { file_path: z.string().describe("Absolute path to the source file to outline.") },
+  async ({ file_path }) => {
+    const absPath = resolve(file_path);
+    if (!existsSync(absPath)) {
+      return { content: [{ type: "text", text: `HALT — File does not exist: ${absPath}` }] };
+    }
+
+    const content = readFile(absPath);
+    if (!content) {
+      return { content: [{ type: "text", text: `HALT — Cannot read file: ${absPath}` }] };
+    }
+
+    const lang = getFileLang(absPath);
+    if (!lang) {
+      return { content: [{ type: "text", text: `Unsupported language for: ${absPath}\nSupported: .js, .ts, .jsx, .tsx, .mjs, .cjs, .py` }] };
+    }
+
+    const symbols = extractSymbols(content, lang);
+    if (symbols.length === 0) {
+      return { content: [{ type: "text", text: `No symbols found in: ${absPath}` }] };
+    }
+
+    const lines = symbols.map(s => `L${s.line}: [${s.kind}] ${s.signature}`);
+    return {
+      content: [{
+        type: "text",
+        text: `## Outline: ${absPath}\n\n${lines.join("\n")}\n\n${symbols.length} symbol(s). Use smart_unfold(path, symbol_name) to read a specific symbol's body.`,
+      }],
+    };
+  }
+);
+
+// Tool: smart_unfold
+server.tool(
+  "smart_unfold",
+  "Expand a specific symbol (function, class, method) from a file. Returns the full source code of just that symbol. Use after smart_outline to read specific code. Supports JS/TS/Python.",
+  { file_path: z.string().describe("Absolute path to the source file."), symbol_name: z.string().describe("Name of the symbol to unfold (function, class, method, etc.)") },
+  async ({ file_path, symbol_name }) => {
+    const absPath = resolve(file_path);
+    if (!existsSync(absPath)) {
+      return { content: [{ type: "text", text: `HALT — File does not exist: ${absPath}` }] };
+    }
+
+    const content = readFile(absPath);
+    if (!content) {
+      return { content: [{ type: "text", text: `HALT — Cannot read file: ${absPath}` }] };
+    }
+
+    const lang = getFileLang(absPath);
+    if (!lang) {
+      return { content: [{ type: "text", text: `Unsupported language for: ${absPath}` }] };
+    }
+
+    const result = extractSymbolBody(content, symbol_name, lang);
+    if (!result) {
+      const symbols = extractSymbols(content, lang);
+      const available = symbols.map(s => `  - ${s.name} (${s.kind})`).join("\n");
+      return {
+        content: [{
+          type: "text",
+          text: `Symbol "${symbol_name}" not found in ${absPath}.\n\nAvailable symbols:\n${available}`,
+        }],
+      };
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: `## ${symbol_name} (${result.startLine}-${result.endLine})\n\n\`\`\`\n${result.body}\n\`\`\``,
       }],
     };
   }
