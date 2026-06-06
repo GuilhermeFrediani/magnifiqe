@@ -1,0 +1,26 @@
+{
+  "name": "stack-perfeita-mcp",
+  "version": "2.0.0",
+  "description": "MCP server that serves project AI rules to any IDE/LLM agent",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "stack-perfeita": "./bin/setup-ide.js",
+    "stack-perfeita-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/*.test.js",
+    "test:watch": "node --test --watch test/*.test.js"
+  },
+  "keywords": ["mcp", "cursor", "copilot", "ai-rules", "llm", "coding-standards"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.25.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

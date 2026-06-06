@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.example
+dist/
+build/
+*.log
+*.tgz
+.DS_Store
+Thumbs.db
+.claude/session_memory.json
+.claude_test/
