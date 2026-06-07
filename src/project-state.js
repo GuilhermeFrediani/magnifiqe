@@ -21,7 +21,7 @@ const VALID_SECTIONS = [
   "last_error",
 ];
 
-function defaultState() {
+export function defaultState() {
   return {
     objective: "",
     constraints: [],
@@ -32,11 +32,12 @@ function defaultState() {
     risks: [],
     last_error: null,
     checkpoints: [],
+    compaction_history: [],
     updated_at: new Date().toISOString(),
   };
 }
 
-function loadState() {
+export function loadState() {
   if (!existsSync(PROJECT_STATE_FILE)) return defaultState();
   try {
     const data = JSON.parse(readFileSync(PROJECT_STATE_FILE, "utf-8"));
@@ -47,7 +48,7 @@ function loadState() {
   }
 }
 
-function saveState(state) {
+export function saveState(state) {
   try {
     const claudeDir = resolve(process.cwd(), ".claude");
     if (!existsSync(claudeDir)) {

@@ -68,3 +68,54 @@ describe('BAD_PATTERNS', () => {
     assert.ok(printPattern.regex.test(code));
   });
 });
+
+import { analyzeCodeMetrics } from '../src/code-reading.js';
+
+describe('analyzeCodeMetrics (AST)', () => {
+  it('should count lines and functions', () => {
+    const code = `function foo() {
+  return 1;
+}
+function bar(x) {
+  if (x) return x;
+  return 0;
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    assert.ok(metrics.lineCount > 0);
+    assert.ok(metrics.functions.length >= 2);
+  });
+
+  it('should detect cyclomatic complexity', () => {
+    const code = `function complex(x, y, z) {
+  if (x) { for (let i = 0; i < y; i++) { if (z && x) {} } }
+  while (x) { switch(y) { case 1: break; case 2: break; } }
+  return x || y || z;
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    const fn = metrics.functions[0];
+    assert.ok(fn.complexity > 1, `Expected complexity > 1, got ${fn.complexity}`);
+  });
+
+  it('should detect nesting depth', () => {
+    const code = `function deep() {
+  if (true) {
+    for (let i = 0; i < 10; i++) {
+      while (true) {
+        if (false) {
+          // depth 5
+        }
+      }
+    }
+  }
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    assert.ok(metrics.maxNesting >= 4, `Expected maxNesting >= 4, got ${metrics.maxNesting}`);
+  });
+
+  it('should handle parse errors gracefully', () => {
+    const code = 'this is not valid {{{{ javascript';
+    const metrics = analyzeCodeMetrics(code);
+    assert.ok(metrics.lineCount > 0);
+    assert.deepStrictEqual(metrics.functions, []);
+  });
+});

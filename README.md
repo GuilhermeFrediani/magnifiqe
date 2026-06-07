@@ -105,26 +105,44 @@ IDE Agent <-- tools: validate, search, checkpoint, resume
 
 ## Core Features
 
-- **PASS/HALT validation** — `validate_bad_code` stops bad code (15 patterns), `dependency_validate` catches hallucinated imports.
+- **PASS/HALT validation** — `validate_bad_code` stops bad code (15 patterns + AST metrics + risk score), `dependency_validate` catches hallucinated imports.
 - **State checkpoints** — save project state, create checkpoints, resume from any point. No more losing context in long sessions.
+- **Compaction layer** — `compact_logs`, `compact_diff`, `compact_conversation_state` for long sessions.
+- **Model profiles** — `get_model_profile` returns tuned config for Claude, GPT, or Gemini.
+- **Project activation** — `activate_project` builds a full manifest (stack, rules, skills, state, fingerprint) in one call.
 - **Adaptive terseness** — behavioral rules enforce concise output, expanding only when risk or debugging demands it.
 - **Progressive disclosure** — rules loaded on-demand via tools, not dumped into context.
 - **Python support** — bad patterns for Python code too (empty except, print debug, TODO).
 
 ---
 
-## Exposed Tools (18 tools)
+## Demo: Before vs After
+
+**Without Stack Perfeita:**
+> Agent generates code with `any` types, hallucinated imports, and no validation.
+> Session drifts after 20 messages, losing track of decisions.
+
+**With Stack Perfeita:**
+> `validate_bad_code` catches `any` before commit (RISK SCORE: 15/100 — HALT).
+> `dependency_validate` catches phantom import `@utils/helpers`.
+> `checkpoint_task("auth-done")` saves state.
+> Next session: `resume_task()` restores full context.
+
+---
+
+## Exposed Tools (24 tools)
 
 | Tool | What it does |
 |---|---|
 | `list_rules()` | Lists all available rule files |
 | `get_rules(topic, mode)` | Reads rules (`summary` = description only, `full` = entire content) |
 | `get_context(module_path)` | Returns CONTEXT.md for a module folder |
-| `validate_bad_code(code)` | **15 patterns** -> PASS/HALT (any, console.log, eval, etc.) |
+| `validate_bad_code(code)` | **15 patterns + AST metrics** -> risk score 0-100 PASS/WARN/HALT |
 | `validate_git_commit(msg)` | Validates Conventional Commits format |
-| `dependency_validate(path)` | Do imports exist or did the LLM hallucinate the path? |
-| `smart_outline(path)` | Lists all functions and signatures in a file |
+| `dependency_validate(path)` | Do imports exist? Checks relative, bare, tsconfig, Node builtins |
+| `smart_outline(path)` | AST-based outline of all symbols in a file |
 | `smart_unfold(path, name)` | Extracts just one specific function from a long file |
+| `smart_read(path, mode)` | Intelligent reader: auto/outline/full/symbol modes |
 | `list_skills()` | Lists available playbooks in `.claude/skills` |
 | `get_skill(name)` | Loads instructions for a specific task |
 | `save_observation(obs)` | Saves architectural decisions across chats |
@@ -135,6 +153,12 @@ IDE Agent <-- tools: validate, search, checkpoint, resume
 | `resume_task(label?)` | Restores state from a checkpoint |
 | `run_command(name, args)` | Runs a structured script from `ai-rules/commands` |
 | `compress_markdown(path)` | Minifies markdown in-memory to save input tokens |
+| `compact_conversation_state(summary)` | Saves structured conversation state to free context |
+| `compact_logs(log_text)` | Extracts errors/warnings from logs, discards noise |
+| `compact_diff(diff_text)` | Summarizes unified diff: files, hunks, line counts |
+| `promote_summary_to_checkpoint(label)` | Promotes compacted state to a formal checkpoint |
+| `get_model_profile(model)` | Returns tuned config for Claude, GPT, or Gemini |
+| `activate_project(root?)` | Builds full project manifest with fingerprint |
 
 ---
 
@@ -142,18 +166,21 @@ IDE Agent <-- tools: validate, search, checkpoint, resume
 
 ```
 src/
-  index.js          # Entry point (~110 lines): config, server init, connect
+  index.js          # Entry point: config, server init, connect
   config.js         # Constants: RULES_DIR, TOPIC_MAP, BAD_PATTERNS
   helpers.js        # readFile, minifyTokens, safeResolvePath
   rate-limiter.js   # Anti-loop rate limiter
   resources.js      # MCP resource registrations
   rules.js          # list_rules, get_rules, get_context
-  validators.js     # validate_bad_code, validate_git_commit, dependency_validate
+  validators.js     # validate_bad_code (regex+AST), validate_git_commit, dependency_validate
   skills.js         # list_skills, get_skill
-  code-reading.js   # smart_outline, smart_unfold
+  code-reading.js   # smart_outline, smart_unfold, smart_read (AST via acorn-loose)
   commands.js       # run_command
   memory.js         # save_observation, search_observations
   project-state.js  # get/save/checkpoint/resume project state
+  compaction.js     # compact_logs, compact_diff, compact_conversation_state, promote_summary_to_checkpoint
+  profiles.js       # get_model_profile (Claude, GPT, Gemini)
+  activation.js     # activate_project (manifest builder with fingerprint)
 ```
 
 Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.md` rule).
@@ -170,6 +197,26 @@ Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.m
 
 ### State Recovery
 > "Resume from last checkpoint. Call `resume_task` and continue from where we left off."
+
+---
+
+## Roadmap
+
+### Shipped (v4.0)
+- Modular architecture (15 modules)
+- 24 MCP tools including state/checkpoint/resume, compaction, profiles, activation
+- AST-based code validation with risk scoring (acorn-loose)
+- Compaction layer for long sessions
+- Model-specific profiles (Claude, GPT, Gemini)
+- Project activation manifest with fingerprint
+- Per-project setup via npx
+- 80+ tests, zero dependencies beyond MCP SDK + zod + acorn
+
+### Next
+- Multi-language AST support (Python via tree-sitter)
+- Semantic search across observations
+- Auto-compaction triggers based on token count
+- Remote project state sync
 
 ---
 

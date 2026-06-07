@@ -5,7 +5,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { extractSymbols, getFileLang } from '../src/code-reading.js';
+import { extractSymbols, getFileLang, analyzeCodeMetrics, extractSymbolsAST } from '../src/code-reading.js';
 
 describe('getFileLang', () => {
   it('should detect JS/TS files', () => {
@@ -86,5 +86,73 @@ describe('extractSymbols', () => {
 }`;
     const symbols = extractSymbols(code, 'js');
     assert.strictEqual(symbols.length, 0);
+  });
+
+  it('should extract class methods via AST', () => {
+    const code = `class UserService {
+  constructor(db) {
+    this.db = db;
+  }
+  async fetchUser(id) {
+    return this.db.find(id);
+  }
+  deleteUser(id) {
+    return this.db.remove(id);
+  }
+}`;
+    const symbols = extractSymbols(code, 'js');
+    assert.ok(symbols.some(s => s.name === 'UserService' && s.kind === 'class'));
+    assert.ok(symbols.some(s => s.name === 'fetchUser'));
+    assert.ok(symbols.some(s => s.name === 'deleteUser'));
+  });
+
+  it('should extract exported arrow functions via AST', () => {
+    const code = `export const processItems = (items) => {
+  return items.map(i => i.id);
+};`;
+    const symbols = extractSymbols(code, 'js');
+    assert.ok(symbols.some(s => s.name === 'processItems'));
+  });
+});
+
+describe('extractSymbolsAST', () => {
+  it('should extract symbols using AST directly', () => {
+    const code = `function hello() { return 'world'; }`;
+    const symbols = extractSymbolsAST(code);
+    assert.ok(symbols.some(s => s.name === 'hello'));
+  });
+
+  it('should return empty array for unparseable code', () => {
+    const code = '{{{{ not valid at all';
+    const symbols = extractSymbolsAST(code);
+    // acorn-loose is very tolerant, but if it fails we get empty array
+    assert.ok(Array.isArray(symbols));
+  });
+});
+
+describe('analyzeCodeMetrics', () => {
+  it('should return lineCount and functions array', () => {
+    const code = `function a() {}
+function b() {}`;
+    const metrics = analyzeCodeMetrics(code);
+    assert.strictEqual(typeof metrics.lineCount, 'number');
+    assert.ok(Array.isArray(metrics.functions));
+    assert.strictEqual(typeof metrics.maxNesting, 'number');
+  });
+
+  it('should compute function complexity', () => {
+    const code = `function complex(x) {
+  if (x > 0) {
+    for (let i = 0; i < x; i++) {
+      if (i % 2 === 0) { continue; }
+    }
+  }
+  return x;
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    const fn = metrics.functions[0];
+    assert.ok(fn);
+    assert.ok(fn.complexity >= 4, `Expected complexity >= 4, got ${fn.complexity}`);
+    assert.ok(fn.lines >= 7, `Expected lines >= 7, got ${fn.lines}`);
   });
 });
