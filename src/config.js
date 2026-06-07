@@ -19,6 +19,7 @@ const SRC_DIR = resolve(RULES_DIR, "../src");
 const SKILLS_DIR = resolve(process.cwd(), ".claude/skills");
 const COMMANDS_DIR = resolve(RULES_DIR, "commands");
 const MEMORY_FILE = resolve(process.cwd(), ".claude", "session_memory.json");
+const PROJECT_STATE_FILE = resolve(process.cwd(), ".claude", "project_state.json");
 
 const TOPIC_MAP = {
   "overview":     "00-project-overview.md",
@@ -99,6 +100,7 @@ export {
   SKILLS_DIR,
   COMMANDS_DIR,
   MEMORY_FILE,
+  PROJECT_STATE_FILE,
   TOPIC_MAP,
   RULE_DESCRIPTIONS,
   BAD_PATTERNS,

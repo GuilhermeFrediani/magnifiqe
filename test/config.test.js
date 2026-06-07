@@ -12,6 +12,7 @@ import {
   SKILLS_DIR,
   COMMANDS_DIR,
   MEMORY_FILE,
+  PROJECT_STATE_FILE,
   TOPIC_MAP,
   RULE_DESCRIPTIONS,
   BAD_PATTERNS,
@@ -25,6 +26,7 @@ describe('Config paths', () => {
     assert.ok(SKILLS_DIR.length > 0);
     assert.ok(COMMANDS_DIR.length > 0);
     assert.ok(MEMORY_FILE.length > 0);
+    assert.ok(PROJECT_STATE_FILE.length > 0);
   });
 
   it('should have RULES_DIR pointing to ai-rules', () => {
@@ -33,6 +35,11 @@ describe('Config paths', () => {
 
   it('should have MEMORY_FILE pointing to JSON', () => {
     assert.ok(MEMORY_FILE.endsWith('.json'));
+  });
+
+  it('should have PROJECT_STATE_FILE pointing to JSON', () => {
+    assert.ok(PROJECT_STATE_FILE.endsWith('.json'));
+    assert.ok(PROJECT_STATE_FILE.includes('project_state'));
   });
 });
 

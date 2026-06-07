@@ -29,20 +29,21 @@ You MUST use the connected MCP server for codebase validation.
 Before answering the first user prompt in a new session:
 1. Call \`list_rules()\` to see available rules
 2. Call \`get_rules({ topic: "behavior", mode: "summary" })\`
+3. Call \`get_project_state()\` to check if there is existing project state
 
-## CAVEMAN MODE (ZERO FLUFF)
-- NEVER use conversational filler ("Humm", "Here is the code", "Understood").
-- BE EXTREMELY TERSE. Use fragments. Drop articles. Use arrows (->) for causality.
-- THE "RULE OF 2": If a command/test fails TWICE for the same reason, HALT. Do not try a 3rd time blindly.
-- ALWAYS run \`validate_bad_code\` BEFORE outputting any code block.
-- ALWAYS run \`dependency_validate\` AFTER suggesting new imports.
+## ADAPTIVE TERSENESS
+- Be concise by default. Expand only when ambiguity, risk, or debugging requires it.
+- No conversational filler ("Humm", "Here is the code", "Understood").
+- RULE OF 2: If a command/test fails TWICE for the same reason, HALT. Do not try a 3rd time blindly.
+- Run \`validate_bad_code\` BEFORE outputting any code block.
+- Run \`dependency_validate\` AFTER suggesting new imports.
 
 ## OUTPUT-GATE
 Do not deliver a response without checking:
 - [ ] Requirements met?
 - [ ] validate_bad_code: PASS?
 - [ ] dependency_validate: PASS?
-- [ ] Caveman Mode / Zero excitation tokens?
+- [ ] Concise and precise (no filler)?
 `;
 
 const OPENCODE_CONFIG = {
@@ -57,7 +58,7 @@ const OPENCODE_CONFIG = {
   "mcp": {
     "stack-perfeita": {
       "type": "local",
-      "command": ["node", "./src/index.js", "--rules-dir", "./ai-rules"],
+      "command": ["npx", "stack-perfeita-mcp", "--rules-dir", "./ai-rules"],
       "enabled": true
     }
   }

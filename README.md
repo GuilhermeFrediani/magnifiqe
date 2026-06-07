@@ -1,6 +1,6 @@
 # Stack Perfeita MCP
 
-**Disciplined engineering for any IDE + LLM.** Move from vibe coding to rules + active validation.
+**MCP server that disciplines coding agents in real projects: anti-hallucination, code validation, and state checkpoints.** Move from vibe coding to rules + active validation.
 
 [![Cursor](https://img.shields.io/badge/Cursor-Ready-purple)](https://cursor.com)
 [![Windsurf](https://img.shields.io/badge/Windsurf-Ready-blue)](https://windsurf.com)
@@ -8,54 +8,50 @@
 [![VS Code](https://img.shields.io/badge/VS_Code-Ready-blue)](https://code.visualstudio.com)
 [![npm version](https://img.shields.io/npm/v/stack-perfeita-mcp.svg)](https://www.npmjs.com/package/stack-perfeita-mcp)
 
-## What It Solves
+## Why This Instead of a System Prompt?
 
-- **Hallucinations** -> `dependency_validate` detects phantom imports
-- **Degradation** -> `validate_bad_code` (15 patterns), anti-loop rate limit
-- **Empty tokens** -> Behavioral rules block "humm", "understood", filler words
-- **Regression** -> OUTPUT-GATE mandatory checklist
-- **Global Standardization** -> Script that unifies `.cursorrules` and `.windsurfrules`
+A system prompt is static text. Stack Perfeita is a **live MCP server** that provides:
+- **Executable validation** — `validate_bad_code` and `dependency_validate` actually check code, not just ask the LLM to self-police.
+- **State checkpoints** — `checkpoint_task` / `resume_task` let the agent roll back to a known-good state after failures.
+- **Progressive disclosure** — rules are loaded on-demand via tools, not dumped into context all at once.
 
 ---
 
-## Quick Install (Recommended)
-
-If you want to use the repository as a centralized rules hub for all your projects (Single Source of Truth):
+## Quick Install (60 seconds)
 
 ```bash
-# Clone to your main code folder
-git clone https://github.com/GuilhermeFrediani/magnifiqe.git ~/.stack-perfeita
-cd ~/.stack-perfeita
-npm install
+# Install globally
+npm install -g stack-perfeita-mcp
 
-# Install the CLI globally
-npm link
-```
-
-### How to Link to a New Project
-In any project folder where you'll be working, simply run:
-
-```bash
+# In your project folder, generate IDE config files:
 stack-perfeita
 ```
 
-This will automatically generate `.cursorrules`, `.windsurfrules` and `opencode.json` in the root of that project, with the **Ignition** commands already embedded.
+This generates `.cursorrules`, `.windsurfrules`, and `opencode.json` pointing to the MCP server. Each project uses its own `ai-rules/` folder for project-specific rules.
 
-*(See the [PROMPTS.md](./PROMPTS.md) file in the repository root for the exact magic words to use in the chat).*
+### Set Up Your Project Rules
+
+Copy the starter rules into your project:
+
+```bash
+# In your project root:
+mkdir ai-rules
+# Copy or create your project-specific rules in ai-rules/
+```
 
 ---
 
 ## Native IDE Configuration
 
 ### Cursor (most popular)
-In Cursor Settings -> MCP -> Add Custom. Add the following configuration (replace the path):
+In Cursor Settings -> MCP -> Add Custom:
 
 ```json
 {
   "mcpServers": {
     "stack-perfeita": {
-      "command": "node",
-      "args": ["C:/Users/YourUser/.stack-perfeita/src/index.js"]
+      "command": "npx",
+      "args": ["stack-perfeita-mcp", "--rules-dir", "./ai-rules"]
     }
   }
 }
@@ -63,15 +59,14 @@ In Cursor Settings -> MCP -> Add Custom. Add the following configuration (replac
 **Restart Cursor** -> done!
 
 ### Windsurf
-1. Windsurf -> **Plugins** (sidebar) -> **MCP Marketplace**
-2. **Add Custom MCP** -> paste the configuration using the same absolute path:
+Windsurf -> **Plugins** (sidebar) -> **Add Custom MCP**:
 
 ```json
 {
   "servers": {
     "stack-perfeita": {
-      "command": "node",
-      "args": ["/absolute/path/to/.stack-perfeita/src/index.js"]
+      "command": "npx",
+      "args": ["stack-perfeita-mcp", "--rules-dir", "./ai-rules"]
     }
   }
 }
@@ -79,33 +74,46 @@ In Cursor Settings -> MCP -> Add Custom. Add the following configuration (replac
 
 ### Claude Desktop / Claude Code
 ```bash
-claude mcp add stack-perfeita --command "node /absolute/path/.stack-perfeita/src/index.js"
+claude mcp add stack-perfeita --command "npx stack-perfeita-mcp --rules-dir ./ai-rules"
 ```
 
 ### VS Code + GitHub Copilot
 Place `.github/copilot-instructions.md` in your project root. The `stack-perfeita` CLI does this automatically.
 
-### Antigravity (Google)
-Antigravity auto-detects local MCP servers, just pass the rules file.
+---
+
+## How It Works
+
+```
+Your Project
+    |
+    v
+stack-perfeita (setup) --> generates .cursorrules + opencode.json
+    |
+    v
+MCP Server (npx stack-perfeita-mcp)
+    |
+    +--> ai-rules/        (your project rules)
+    +--> .claude/skills/  (task playbooks)
+    +--> .claude/project_state.json  (state checkpoints)
+    |
+    v
+IDE Agent <-- tools: validate, search, checkpoint, resume
+```
 
 ---
 
-## How to Instruct the LLM (Magic Prompts)
+## Core Features
 
-We have a file just for the prompts you should paste in the chat. **[Read PROMPTS.md](./PROMPTS.md)**.
-In summary:
-
-**Prompt 1: IGNITION (Project Opening)**
-Whenever starting a new project, paste in the chat:
-> "STACK-PERFEITA MCP ACTIVE. Call `list_rules`, read `AGENTS.md` at root. OUTPUT-GATE MANDATORY."
-
-**Prompt 2: CHECKPOINT (Maintenance)**
-If the AI starts rambling or producing bad code:
-> "CHECKPOINT MCP. Stop rambling. Call `validate_bad_code` on the last block and ensure ZERO FLUFF."
+- **PASS/HALT validation** — `validate_bad_code` stops bad code (15 patterns), `dependency_validate` catches hallucinated imports.
+- **State checkpoints** — save project state, create checkpoints, resume from any point. No more losing context in long sessions.
+- **Adaptive terseness** — behavioral rules enforce concise output, expanding only when risk or debugging demands it.
+- **Progressive disclosure** — rules loaded on-demand via tools, not dumped into context.
+- **Python support** — bad patterns for Python code too (empty except, print debug, TODO).
 
 ---
 
-## Exposed Tools (14 tools)
+## Exposed Tools (18 tools)
 
 | Tool | What it does |
 |---|---|
@@ -121,6 +129,10 @@ If the AI starts rambling or producing bad code:
 | `get_skill(name)` | Loads instructions for a specific task |
 | `save_observation(obs)` | Saves architectural decisions across chats |
 | `search_observations(q)` | Searches project memory |
+| `get_project_state(section?)` | Returns full project state or a specific section |
+| `save_project_state(section, content)` | Updates a section of project state |
+| `checkpoint_task(label)` | Creates a snapshot of current state for rollback |
+| `resume_task(label?)` | Restores state from a checkpoint |
 | `run_command(name, args)` | Runs a structured script from `ai-rules/commands` |
 | `compress_markdown(path)` | Minifies markdown in-memory to save input tokens |
 
@@ -130,7 +142,7 @@ If the AI starts rambling or producing bad code:
 
 ```
 src/
-  index.js          # Entry point (~100 lines): config, server init, connect
+  index.js          # Entry point (~110 lines): config, server init, connect
   config.js         # Constants: RULES_DIR, TOPIC_MAP, BAD_PATTERNS
   helpers.js        # readFile, minifyTokens, safeResolvePath
   rate-limiter.js   # Anti-loop rate limiter
@@ -141,20 +153,23 @@ src/
   code-reading.js   # smart_outline, smart_unfold
   commands.js       # run_command
   memory.js         # save_observation, search_observations
+  project-state.js  # get/save/checkpoint/resume project state
 ```
 
 Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.md` rule).
 
 ---
 
-## Why It's Different (vs other MCPs)
+## Prompt Recipes
 
-- **PASS/HALT** — doesn't suggest, it **STOPS** bad code and returns error via JSON-RPC.
-- **Excitation tokens BLOCKED** — Forces the LLM to stop saying "Understood, I'll do that!"
-- **OUTPUT-GATE** — mandatory checklist before the AI sends the final response.
-- **Session System** — the AI remembers learnings via `save_observation`.
-- **Context Engineering** — `compress_markdown` + semantic summarization for long sessions.
-- **Python Support** — bad patterns for Python code too (empty except, print debug, TODO).
+### Ignition (Session Start)
+> "STACK-PERFEITA MCP ACTIVE. Call `list_rules`, read `get_rules('behavior')`, call `get_project_state`. OUTPUT-GATE MANDATORY."
+
+### Checkpoint (Course Correction)
+> "CHECKPOINT MCP. Call `checkpoint_task('before-refactor')`. Return to concise mode."
+
+### State Recovery
+> "Resume from last checkpoint. Call `resume_task` and continue from where we left off."
 
 ---
 

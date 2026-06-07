@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * stack-perfeita-mcp v2.0.0
+ * stack-perfeita-mcp v3.0.0
  * MCP server that exposes project AI rules as tools for any IDE/agent.
  *
  * Architecture: Modular — each tool category lives in its own file under src/.
@@ -26,6 +26,7 @@ import { registerSkillsTools } from "./skills.js";
 import { registerCodeReadingTools } from "./code-reading.js";
 import { registerCommandsTools } from "./commands.js";
 import { registerMemoryTools } from "./memory.js";
+import { registerProjectStateTools } from "./project-state.js";
 
 // ─── MCP Protocol Protection ─────────────────────────────────────────────────
 // stdout is reserved for JSON-RPC. Any console.log breaks the protocol.
@@ -35,7 +36,7 @@ console.log = (...args) => process.stderr.write(args.map(a => typeof a === 'stri
 // ─── Server ──────────────────────────────────────────────────────────────────
 const server = new McpServer({
   name: "stack-perfeita-mcp",
-  version: "2.0.0",
+  version: "3.0.0",
 });
 
 // ─── Register all tools and resources ─────────────────────────────────────────
@@ -46,6 +47,7 @@ registerSkillsTools(server);
 registerCodeReadingTools(server);
 registerCommandsTools(server);
 registerMemoryTools(server);
+registerProjectStateTools(server);
 
 // Tool: compress_markdown (token compression utility)
 server.tool(
@@ -82,7 +84,7 @@ server.tool(
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-process.stderr.write(`stack-perfeita-mcp v2.0.0 started\nRules dir: ${RULES_DIR}\n`);
+process.stderr.write(`stack-perfeita-mcp v3.0.0 started\nRules dir: ${RULES_DIR}\n`);
 
 // ─── Orphan Detection ────────────────────────────────────────────────────────
 // Auto-exit when parent process dies (stdin closed / ppid changed)

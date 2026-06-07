@@ -8,4 +8,5 @@ build/
 .DS_Store
 Thumbs.db
 .claude/session_memory.json
+.claude/project_state.json
 .claude_test/
