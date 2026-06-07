@@ -118,4 +118,32 @@ function bar(x) {
     assert.ok(metrics.lineCount > 0);
     assert.deepStrictEqual(metrics.functions, []);
   });
+
+  it('should report hasReturnType=false for untyped JS functions', () => {
+    const code = `function calculateTotal(items) {
+  return items.reduce((sum, i) => sum + i.price, 0);
+}
+function formatCurrency(amount) {
+  return '$' + amount.toFixed(2);
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    const calcFn = metrics.functions.find(f => f.name === 'calculateTotal');
+    const fmtFn = metrics.functions.find(f => f.name === 'formatCurrency');
+    assert.ok(calcFn);
+    assert.strictEqual(calcFn.hasReturnType, false);
+    assert.ok(fmtFn);
+    assert.strictEqual(fmtFn.hasReturnType, false);
+  });
+
+  it('should include hasReturnType field in every function entry', () => {
+    const code = `export function greet(name) {
+  return 'Hello ' + name;
+}
+export const add = (a, b) => a + b;`;
+    const metrics = analyzeCodeMetrics(code);
+    assert.ok(metrics.functions.length >= 1);
+    for (const fn of metrics.functions) {
+      assert.ok(typeof fn.hasReturnType === 'boolean', `${fn.name} missing hasReturnType`);
+    }
+  });
 });

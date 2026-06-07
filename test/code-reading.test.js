@@ -155,4 +155,27 @@ function b() {}`;
     assert.ok(fn.complexity >= 4, `Expected complexity >= 4, got ${fn.complexity}`);
     assert.ok(fn.lines >= 7, `Expected lines >= 7, got ${fn.lines}`);
   });
+
+  it('should detect hasReturnType for plain JS functions (false)', () => {
+    const code = `function foo(x) {
+  return x + 1;
+}
+function bar() {
+  return 'hello';
+}`;
+    const metrics = analyzeCodeMetrics(code);
+    // Plain JS without type annotations should report hasReturnType: false
+    for (const fn of metrics.functions) {
+      assert.strictEqual(fn.hasReturnType, false, `Expected ${fn.name} hasReturnType=false`);
+    }
+  });
+
+  it('should always include hasReturnType in function metrics', () => {
+    const code = `function a() {}
+const b = () => {};`;
+    const metrics = analyzeCodeMetrics(code);
+    for (const fn of metrics.functions) {
+      assert.ok('hasReturnType' in fn, `Missing hasReturnType in ${fn.name}`);
+    }
+  });
 });

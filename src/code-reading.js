@@ -227,6 +227,18 @@ function extractSymbolBody(content, symbolName, lang) {
   return null;
 }
 
+// ─── Return type annotation check (regex-based, acorn doesn't parse TS types) ─
+function checkReturnType(content, nodeStart, bodyStart) {
+  // Extract signature text: from function start to opening brace of body
+  const sigText = content.slice(nodeStart, bodyStart);
+  // Find last ')' in signature (closing params)
+  const lastParen = sigText.lastIndexOf(")");
+  if (lastParen === -1) return false;
+  // Check for ':' after params close (return type annotation)
+  const afterParams = sigText.slice(lastParen + 1);
+  return /:\s*\S/.test(afterParams);
+}
+
 // ─── AST-based metrics for validate_bad_code ────────────────────────────────
 export function analyzeCodeMetrics(content) {
   const lines = content.split("\n");
@@ -270,7 +282,10 @@ export function analyzeCodeMetrics(content) {
         }
         countComplexity(node.body);
 
-        metrics.functions.push({ name, startLine, endLine, lines: funcLines, complexity });
+        // Typedness check: does the function have a return type annotation?
+        const hasReturnType = checkReturnType(content, node.start, node.body?.start || node.end);
+
+        metrics.functions.push({ name, startLine, endLine, lines: funcLines, complexity, hasReturnType });
       }
 
       for (const key of Object.keys(node)) {

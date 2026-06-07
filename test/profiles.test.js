@@ -15,7 +15,7 @@ describe('PROFILES', () => {
   });
 
   it('should have all required fields in each profile', () => {
-    const requiredFields = ['name', 'verbosity', 'citations', 'compaction', 'caching', 'context_limit', 'strictness', 'tool_style'];
+    const requiredFields = ['name', 'verbosity', 'citations', 'compaction', 'caching', 'context_limit', 'strictness', 'tool_style', 'cache_tool'];
     for (const [key, profile] of Object.entries(PROFILES)) {
       for (const field of requiredFields) {
         assert.ok(profile[field], `Profile ${key} missing field: ${field}`);

@@ -16,6 +16,7 @@ const PROFILES = {
     context_limit: "200K tokens. Keep active state under 10K. Use compaction when approaching 50% context usage.",
     strictness: "High for security and validation (never skip validate_bad_code). Adaptive for style and naming.",
     tool_style: "Call tools before asserting facts. Verify after mutations. Use checkpoint_task before risky operations.",
+    cache_tool: "Call get_rules_bundle('index') at session start. Use as stable prefix for prompt caching.",
   },
   gpt: {
     name: "GPT (OpenAI)",
@@ -26,6 +27,7 @@ const PROFILES = {
     context_limit: "128K tokens (GPT-4o). Keep system prompt stable for cache hits. Rotate context via compaction.",
     strictness: "High for output schema and security. Moderate for code style (allow framework conventions).",
     tool_style: "Prefer function calling over free-text tool descriptions. Always verify tool results before responding.",
+    cache_tool: "Call get_rules_bundle('index') at session start. System prompt caching is automatic — keep rules in stable prefix.",
   },
   gemini: {
     name: "Gemini (Google)",
@@ -36,6 +38,7 @@ const PROFILES = {
     context_limit: "1M tokens (Gemini 1.5 Pro). Larger context available but compaction still recommended for cost.",
     strictness: "High for security validation. Adaptive for style. Use validate_bad_code as gate.",
     tool_style: "Use function declarations for all tools. Verify file existence before operations.",
+    cache_tool: "Call get_rules_bundle('index') at session start. Gemini supports context caching natively — place rules in cached prefix.",
   },
 };
 
@@ -80,6 +83,9 @@ export function registerProfilesTools(server) {
         "",
         `### Tool Style`,
         profile.tool_style,
+        "",
+        `### Cache Strategy`,
+        profile.cache_tool,
       ];
 
       return {

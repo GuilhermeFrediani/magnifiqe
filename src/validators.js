@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { existsSync, readdirSync } from "fs";
-import { resolve, dirname, join } from "path";
+import { resolve, dirname, join, basename } from "path";
 import { BAD_PATTERNS } from "./config.js";
 import { readFile } from "./helpers.js";
 import { rateLimiter } from "./rate-limiter.js";
@@ -54,8 +54,9 @@ export function registerValidatorsTools(server) {
   server.tool(
     "validate_bad_code",
     "Checks code against bad patterns (regex + AST analysis). Returns risk score 0-100 with PASS/WARN/HALT verdict. Regex: any, console.log, eval, var, innerHTML, etc. AST: function size, cyclomatic complexity, nesting depth. Use BEFORE submitting code.",
-    { code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python).") },
-    async ({ code }) => {
+    { code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python)."),
+      file_path: z.string().optional().describe("Absolute path to the source file (enables missing test detection).") },
+    async ({ code, file_path }) => {
       const rateLimitHit = rateLimiter.check("validate_bad_code");
       if (rateLimitHit) {
         return { content: [{ type: "text", text: rateLimitHit }] };
@@ -130,6 +131,35 @@ export function registerValidatorsTools(server) {
       } else if (metrics.maxNesting >= THRESHOLDS.NESTING_WARN) {
         score += 5;
         findings.push(`- [WARN] Nesting depth: ${metrics.maxNesting} levels (limit ${THRESHOLDS.NESTING_WARN})`);
+      }
+
+      // Typedness: missing return type annotations (TS advisory)
+      const untypedFunctions = metrics.functions.filter(f => !f.hasReturnType && f.name !== "<arrow>" && f.name !== "<anonymous>");
+      if (untypedFunctions.length > 0 && untypedFunctions.length <= 5) {
+        score += 3;
+        findings.push(`- [WARN] Missing return type: ${untypedFunctions.map(f => f.name).join(", ")}`);
+      }
+
+      // Missing test detection (only when file_path is provided)
+      if (file_path) {
+        const TEST_EXTS = [".js", ".ts", ".mjs", ".cjs"];
+        const base = basename(file_path).replace(/\.(js|ts|jsx|tsx|mjs|cjs)$/, "");
+        const testDirs = [
+          dirname(file_path),
+          join(dirname(file_path), "..", "test"),
+          join(dirname(file_path), "..", "tests"),
+          join(dirname(file_path), "..", "__tests__"),
+        ];
+        const hasTests = testDirs.some(dir =>
+          TEST_EXTS.some(ext => existsSync(join(dir, `${base}.test${ext}`)))
+        );
+        const hasExports = /export\s+(function|const|class|default)|module\.exports/.test(code);
+        if (hasExports && !hasTests) {
+          score += 5;
+          findings.push(`- [WARN] No test file found for module "${base}" (searched test/, tests/, __tests__/)`);
+        } else {
+          findings.push(`- [INFO] Test coverage: ${hasTests ? "test file found" : "no exports to test"}`);
+        }
       }
 
       // Cap score at 100

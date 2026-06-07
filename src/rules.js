@@ -135,4 +135,59 @@ export function registerRulesTools(server) {
       };
     }
   );
+
+  // Tool: get_rules_bundle (cache-aware: stable order for prefix caching)
+  server.tool(
+    "get_rules_bundle",
+    "Returns all project rules concatenated in stable alphabetical order, optimized for prompt caching. Mode 'index' returns filenames + descriptions (~200 tokens). Mode 'full' returns all rule content concatenated. Use at session start as a cache-friendly prefix.",
+    {
+      mode: z.enum(["index", "full"]).default("index").describe("Return mode: 'index' = filenames + descriptions (token-efficient), 'full' = all rule content concatenated."),
+    },
+    async ({ mode }) => {
+      const rateLimitHit = rateLimiter.check("get_rules_bundle");
+      if (rateLimitHit) {
+        return { content: [{ type: "text", text: rateLimitHit }] };
+      }
+
+      const files = listRuleFiles();
+      if (files.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: `No rule files found in: ${RULES_DIR}`,
+          }],
+        };
+      }
+
+      if (mode === "index") {
+        const lines = files.map(f => {
+          const desc = RULE_DESCRIPTIONS[f] || "Custom rule file";
+          return `- **${f}** — ${desc}`;
+        });
+        return {
+          content: [{
+            type: "text",
+            text: `## Rules Index (${files.length} files)\n\n${lines.join("\n")}\n\nUse get_rules(topic) for full content of any rule.`,
+          }],
+        };
+      }
+
+      // mode=full: concatenate all rules in stable order
+      const sections = [];
+      for (const file of files) {
+        const content = readFile(safeResolvePath(RULES_DIR, file));
+        if (content) {
+          sections.push(`<!-- rule: ${file} -->\n## ${file}\n\n${minifyTokens(content)}`);
+        }
+      }
+
+      const totalTokens = sections.reduce((sum, s) => sum + s.length, 0);
+      return {
+        content: [{
+          type: "text",
+          text: `## Rules Bundle (${files.length} files, ~${Math.round(totalTokens / 4)} tokens)\n\n${sections.join("\n\n---\n\n")}`,
+        }],
+      };
+    }
+  );
 }

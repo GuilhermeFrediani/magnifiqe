@@ -176,6 +176,12 @@ export function registerActivationTools(server) {
         "### State",
         ...stateLines,
         "",
+        "### Cache Strategy",
+        "- Call get_rules_bundle('index') first for stable prefix",
+        "- Load individual rules on-demand via get_rules(topic)",
+        "- Static: rule files rarely change (cache-friendly)",
+        "- Volatile: project_state, observations (reload each session)",
+        "",
         "Use get_project_state() for full state, get_rules(topic) for rule details.",
       ];
 

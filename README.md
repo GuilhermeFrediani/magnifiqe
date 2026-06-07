@@ -130,7 +130,7 @@ IDE Agent <-- tools: validate, search, checkpoint, resume
 
 ---
 
-## Exposed Tools (24 tools)
+## Exposed Tools (25 tools)
 
 | Tool | What it does |
 |---|---|
@@ -159,6 +159,7 @@ IDE Agent <-- tools: validate, search, checkpoint, resume
 | `promote_summary_to_checkpoint(label)` | Promotes compacted state to a formal checkpoint |
 | `get_model_profile(model)` | Returns tuned config for Claude, GPT, or Gemini |
 | `activate_project(root?)` | Builds full project manifest with fingerprint |
+| `get_rules_bundle(mode)` | All rules in stable order for prompt caching |
 
 ---
 
@@ -204,7 +205,7 @@ Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.m
 
 ### Shipped (v4.0)
 - Modular architecture (15 modules)
-- 24 MCP tools including state/checkpoint/resume, compaction, profiles, activation
+- 25 MCP tools including state/checkpoint/resume, compaction, profiles, activation
 - AST-based code validation with risk scoring (acorn-loose)
 - Compaction layer for long sessions
 - Model-specific profiles (Claude, GPT, Gemini)
