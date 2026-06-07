@@ -1,0 +1,2917 @@
+diff --git a/.github/copilot-instructions.md b/.github/copilot-instructions.md
+index b5ee493..0c533d5 100644
+--- a/.github/copilot-instructions.md
++++ b/.github/copilot-instructions.md
+@@ -1,43 +1,41 @@
+-# GitHub Copilot Instructions (The Efficient Frontier)
++# GitHub Copilot Instructions (Stack Perfeita MCP)
+ 
+ ## Objetivo
+-Este repositório adota o **AIPIHKAL Protocol**. Priorize correção, clareza, manutenção e mudanças pequenas e modulares. Nenhuma alucinação, "achismo" ou geração de "Bad Code" é tolerada.
++Este repositório adota o Stack Perfeita MCP. Priorize correção, clareza, manutenção, mudanças pequenas e provas reais. Nenhuma alucinação, achismo ou código ruim deve passar sem sinalização.
+ 
+-## 1. Regras Gerais & Comportamento Esperado (Anti-Alucinação & Anti-Loop)
+-- **Zero Tokens de Excitação:** Ao gerar respostas no chat, **NUNCA** escreva preâmbulos vazios como "Vou analisar o código", "Entendido", "Certo", "Aqui está". Retorne apenas o código ou perguntas arquiteturais diretas e técnicas.
+-- **A Lei da Fundação Podre:** Se o arquivo atual apresentar lógicas frágeis na linha 50 (ex: tipagem `any`, try/catch engolindo erros, funções gigantes sem testes), NÃO CONSTRUA a sua feature solicitada na linha 100. Alerte o usuário sobre a má fundação e proponha refatorá-la antes de continuar.
+-- **Definição de "Loop":** Se sua correção falhar e você sugerir uma segunda alteração parecida para testar se funciona (achismo cego), considere um loop de alucinação e PARE. Mude de abordagem, exija ler logs estruturados ou sugira usar o `debugger`.
+-- Siga sempre os padrões (bons) já existentes no repositório.
+-- Se houver dúvida ou o escopo for amplo, proponha um plano curto (em bullet points) antes de implementar.
+-- **Requirement-Lock:** Antes de gerar código, liste cada requisito do prompt numerado. Marque ✓ implementado ou ✗ descartado com justificativa. Entrega sem checklist preenchido = output inválido. Rejeite e reinicie.
+-- **Session-Start:** Toda sessão começa confirmando escopo + requisitos com o usuário.
++## 1. Comportamento esperado
++- **Zero tokens de excitação:** não use preâmbulos vazios como “vou analisar”, “entendido”, “certo”, “aqui está”.
++- **Fundação podre:** se o arquivo já estiver comprometido (`any`, catch vazio, função gigante, base sem teste), pare a feature e proponha corrigir a base primeiro.
++- **Rule of 2:** duas falhas iguais ou muito parecidas -> pare e reporte causa raiz.
++- **Mudanças pequenas:** preserve o padrão já existente do projeto, salvo quando o padrão atual estiver claramente errado.
++- **Requirement lock:** antes de entregar, confira requisitos atendidos e pendências reais.
++- **Escopo claro -> execute. Escopo ambíguo -> confirme.**
+ 
+-## 2. Stack e Projeto
+-*(Substitua os valores abaixo de acordo com o projeto atual)*
+-- **Stack principal:** Node.js / TypeScript / React
+-- **Gerenciador de pacotes:** pnpm
+-- **Comandos:**
+-  - Dev: `npm run dev`
+-  - Build: `npm run build`
+-  - Test: `npm run test`
+-  - Lint: `npm run lint`
++## 2. Fluxo recomendado
++1. Se necessário, ative o contexto do projeto lendo `ai-rules/` relevantes.
++2. Antes de código final, valide a proposta com `validate_bad_code`.
++3. Ao introduzir imports, paths ou assets, valide com `dependency_validate`.
++4. Em respostas longas, aplique `validate_response_style`.
++5. Em tarefa longa, use estado/checkpoints para evitar drift.
+ 
+-## 3. Divulgação Progressiva (Progressive Disclosure)
+-Se o escopo da tarefa tocar nos temas abaixo, leia os respectivos arquivos em `ai-rules/` antes de sugerir código:
+-- `ai-rules/00-project-overview.md`: Visão da arquitetura.
+-- `ai-rules/01-ai-workflow-strict.md`: Regras de execução de tarefas sem erros.
+-- `ai-rules/09-bad-patterns-halt.md`: As definições precisas do que é um "Código Ruim" vs "Código Bom".
+-- `ai-rules/02-coding-standards.md`: O "Estilo Caveman" (óbvio, sem abstrações espertas).
+-- `ai-rules/04-security-secrets.md`: OWASP e senhas.
+-- `ai-rules/05-debugging-mastery.md`: Estratégia sem console.log().
+-- `ai-rules/07-frontend-semantic.md`: Componentes limpos.
+-- `ai-rules/10-llm-behavioral-rules.md`: Regras universais de comportamento + bloqueio de excitação.
++## 3. Divulgação progressiva
++Se o escopo tocar nestes temas, leia antes de sugerir código:
++- `ai-rules/01-ai-workflow-strict.md`
++- `ai-rules/02-coding-standards.md`
++- `ai-rules/03-token-economy.md`
++- `ai-rules/04-security-secrets.md`
++- `ai-rules/05-debugging-mastery.md`
++- `ai-rules/09-bad-patterns-halt.md`
++- `ai-rules/10-llm-behavioral-rules.md`
++- `ai-rules/11-systematic-debugging.md`
+ 
+-## 4. Padrões de Código
+-- Funções puras, pequenas e testáveis. Responsabilidade única por componente.
+-- **TypeScript Strict:** Respeite a tipagem. Apenas use `any` como último recurso extremo, sempre documentando o motivo.
+-- Não introduza padrões aninhados extremos ("Sopa de If/Else"). Use "Early Returns".
++## 4. Padrões de código
++- Funções pequenas, testáveis e com responsabilidade clara.
++- Evite `any`, `eval`, `innerHTML`, catches vazios e lógica profundamente aninhada.
++- Prefira early returns a “sopa de if/else”.
++- Não invente APIs, arquivos, dependências ou comportamento não verificado.
+ 
+-## 5. Validação Exigida
+-- Se você não consegue provar que seu código funciona executando o teste correspondente ou analisando o arquivo, avise o usuário da possibilidade de falha.
+-- Toda refatoração deve garantir que lint, build e a tipagem não foram quebrados no processo.
+\ No newline at end of file
++## 5. Validação exigida
++- Não declare sucesso sem teste, build, lint, leitura do arquivo alterado, ou outra evidência real.
++- Toda refatoração deve preservar integridade do projeto.
++- Se o risco estiver alto ou a base estiver ruim, pare antes de ampliar escopo.
+diff --git a/AGENTS.md b/AGENTS.md
+index 91c35cd..6b6c90f 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -2,43 +2,45 @@
+ 
+ Use este arquivo como contexto de integração para sessões neste repositório.
+ 
+-## 1. Por que (Why)
++## 1. Por que
+ Este projeto busca máxima precisão técnica, sem alucinações, com código modular, seguro, testado e econômico em tokens.
+ 
+-## 2. O que (Project Map)
+-- `ai-rules/` — Manuais de arquitetura, segurança e fluxo (carregados sob demanda via MCP tools).
+-- `.claude/skills/` — Playbooks de tarefas específicas (carregados quando a tarefa corresponder).
+-- `src/` — Código do MCP server (12 módulos, ~24 tools).
++## 2. O que
++- `ai-rules/` — Regras profundas de arquitetura, fluxo, segurança, debugging e comportamento.
++- `.claude/skills/` — Playbooks reutilizáveis para tarefas operacionais.
++- `src/` — Código do MCP server, organizado por responsabilidade.
+ 
+-## 3. Como (Core Loop)
+-- **Economia de contexto:** Evite filler ("Humm", "Entendido", "Vou analisar"). Seja direto — código, comandos ou perguntas técnicas.
+-- **Não construa sobre fundação frágil:** Ao detectar lógica problemática (God Classes, catch vazio, `any`) antes de uma mudança, avise e proponha corrigir a base primeiro (veja `ai-rules/09-bad-patterns-halt.md`).
+-- **Modo PLAN:** Para lógicas complexas, proponha um plano antes de implementar.
+-- **Rule of 2 (Anti-Loop):** Se um comando ou teste falhar duas vezes com o mesmo erro, pare e reporte ao usuário. Não tente adivinhar.
+-- **Debugging estruturado:** Evite `console.log("aqui")` para debugging. Use logs estruturados ou `debugger;` (veja `ai-rules/05-debugging-mastery.md`).
+-- **Provas reais:** Valide modificações rodando linter, typecheck ou lendo o arquivo final para confirmar que a edição ocorreu.
+-- **Citações:** Ao propor um padrão, mencione qual arquivo do projeto o inspirou.
+-- **Requirement-Lock:** Antes de gerar código, liste requisitos. Confirme cada um antes de entregar.
+-- **State-aware:** Use `get_project_state()` e `checkpoint_task()` para manter contexto em sessões longas.
++## 3. Como
++- **Zero tokens de excitação:** sem preâmbulo vazio, sem “vou analisar”, sem aquecimento verbal.
++- **Fundação Podre:** se a base estiver ruim, pare a feature e proponha corrigir a base antes.
++- **Rule of 2:** se falhar duas vezes pelo mesmo motivo, pare e reporte a causa raiz.
++- **Provas reais:** não declare sucesso sem teste, leitura do arquivo alterado, build, lint ou outra evidência concreta.
++- **Requirement lock:** antes de entregar, confira requisitos atendidos e pendências reais.
++- **State-aware:** use `activate_project()`, `get_project_state()`, `checkpoint_task()` e `list_checkpoints()` em tarefas longas.
++- **Caveman mode:** pode ser ativado explicitamente quando pressão de tokens estiver alta, mas sem perder precisão técnica.
+ 
+-## 4. Divulgação Progressiva (Progressive Disclosure)
+-Não carregue todas as regras de uma vez. Leia guias em `ai-rules/` apenas quando o contexto exigir:
+-- **Segurança/Senhas:** `ai-rules/04-security-secrets.md`
+-- **Debugging JS/TS:** `ai-rules/05-debugging-mastery.md`
+-- **Frontend Semântico:** `ai-rules/07-frontend-semantic.md`
+-- **CI/CD e Testes:** `ai-rules/06-ci-cd-testing.md`
+-- **Fundações e Padrões Ruins:** `ai-rules/09-bad-patterns-halt.md`
+-- **Código Honesto:** `ai-rules/02-coding-standards.md`
+-- **Economia de Tokens:** `ai-rules/03-token-economy.md`
+-- **Regras Universais LLM:** `ai-rules/10-llm-behavioral-rules.md`
+-- **Debugging Sistemático:** `ai-rules/11-systematic-debugging.md`
++## 4. Divulgação progressiva
++Não carregue tudo de uma vez. Leia apenas a regra necessária para a tarefa atual:
++- Segurança -> `ai-rules/04-security-secrets.md`
++- Debugging -> `ai-rules/05-debugging-mastery.md`
++- Frontend -> `ai-rules/07-frontend-semantic.md`
++- CI/CD e testes -> `ai-rules/06-ci-cd-testing.md`
++- Fundação podre -> `ai-rules/09-bad-patterns-halt.md`
++- Estilo de código -> `ai-rules/02-coding-standards.md`
++- Economia de tokens -> `ai-rules/03-token-economy.md`
++- Comportamento LLM -> `ai-rules/10-llm-behavioral-rules.md`
++- Debugging sistemático -> `ai-rules/11-systematic-debugging.md`
+ 
+-Use *Skills* (`.claude/skills/`) para tarefas de fluxo:
+-- `build-test-verify`: Para testar ou lintar alterações.
+-- `create-pull-request`: Para formatar PRs.
+-- `core-conventions`: Para regras finas de estilo.
+-- `git-commit`: Para convenções de commit.
+-- `self-review-checklist`: Para revisão antes de submeter.
++Use *skills* para fluxo operacional quando fizer sentido:
++- `build-test-verify`
++- `create-pull-request`
++- `core-conventions`
++- `git-commit`
++- `self-review-checklist`
+ 
+-## 5. Branching
+-Use branches de feature. Evite push direto para a `main`. Siga os padrões da skill `git-commit`.
++## 5. Regra prática de sessão
++- Se o escopo estiver claro -> execute.
++- Se estiver ambíguo, arriscado ou irreversível -> confirme.
++- Antes de código final -> `validate_bad_code`.
++- Antes de explicação longa -> `validate_response_style`.
++- Antes de retomar trabalho antigo -> `list_checkpoints()` e, se necessário, `resume_task()`.
+diff --git a/PROMPTS.md b/PROMPTS.md
+index 487d4e3..bc63e3d 100644
+--- a/PROMPTS.md
++++ b/PROMPTS.md
+@@ -1,77 +1,92 @@
+ # Core Prompts: Stack Perfeita
+ 
+-Keep these prompts in a keyboard shortcut (like Raycast Snippets, Espanso or Beeftext) to invoke the AI instantly and enforce MCP behavior.
++Keep these snippets in a shortcut tool (Raycast, Espanso, Beeftext, etc.) and use them to force the MCP back into the right operating mode.
+ 
+-## 1. Ignition Prompt (Session Start)
+-*Use this on the very first message when starting a new task or project.*
++## 1. Ignition Prompt — New project / fresh session
+ 
+ ```text
+-STACK-PERFEITA MCP ACTIVE.
+-
+-1. Call `list_rules` -> see available rules
+-2. Call `get_rules("behavior", mode="summary")` -> read behavioral rules
+-3. Call `get_project_state()` -> check existing state or start fresh
+-4. MODE: Adaptive Terseness (concise by default, expand when risk/debugging requires)
+-5. RULE OF 2 (Anti-Loop): If you fail twice the same way -> HALT -> Report.
+-
+-OUTPUT-GATE MANDATORY (At the end of every response):
+-- [ ] My prompt requirements met
+-- [ ] `validate_bad_code` = PASS
+-- [ ] `dependency_validate` = PASS
+-- [ ] Concise and precise (no filler)
++Activate Stack Perfeita in this project.
++
++1. Call `activate_project()`
++2. Call `get_model_profile("claude")` (or the active provider)
++3. Call `get_rules_bundle("index")`
++4. Call `get_project_state()`
++5. Work in adaptive terseness
++6. Before final code -> `validate_bad_code`
++7. Before new imports/assets -> `dependency_validate`
++8. Same failure twice -> HALT
++9. If foundation is rotten -> stop feature work and propose fixing the base first
+ ```
+ 
+ ---
+ 
+-## 2. Checkpoint Prompt (Course Correction)
+-*Use this when the AI starts rambling, producing lower quality output, or failing the Rule of 2.*
++## 2. Resume Prompt — Ongoing project
+ 
+ ```text
+-CHECKPOINT MCP: RETURN TO CONCISE MODE.
++Resume this project with Stack Perfeita.
++
++1. Call `activate_project()`
++2. Call `get_project_state()`
++3. Call `list_checkpoints()`
++4. If needed, call `resume_task()`
++5. Load only the rule needed for the current task
++6. Continue from the last proven step
++```
++
++---
+ 
+-1. Return to Rules -> `get_rules("behavior")`.
+-2. Call `checkpoint_task("before-next-step")` to save current state.
+-3. Call `validate_bad_code` on the last code block. Did it PASS?
+-4. Root cause of previous failure -> Exact fix. No blind attempts.
+-5. Respond with corrected code or bash command. No preamble.
++## 3. Anti-loop / anti-drift reinforcement
++
++```text
++Reinforce Stack Perfeita essentials.
++
++- Reload state with `get_project_state()`
++- Re-read only the rule needed
++- Same failure twice -> HALT and report root cause
++- Validate final code with `validate_bad_code`
++- Validate new imports/assets with `dependency_validate`
++- Validate long prose with `validate_response_style`
++- Do not invent APIs, files, or behavior
++- Continue exactly from the last valid step
+ ```
+ 
+ ---
+ 
+-## 3. State Recovery Prompt (Resume Session)
+-*Use when resuming a session and you need to pick up where you left off.*
++## 4. Caveman Mode prompt
+ 
+ ```text
+-RESUME SESSION.
++CAVEMAN MODE: ACTIVE.
+ 
+-1. Call `get_project_state()` to see current state.
+-2. If state is empty or stale, call `resume_task()` to restore from last checkpoint.
+-3. Review `next_steps` and `open_questions` sections.
+-4. Continue from where we left off.
++- Zero excitation tokens
++- No filler, no warm-up, no process narration
++- Keep technical precision
++- Short sentences, direct actions, minimal prose
++- If response grows, run `validate_response_style(..., mode="caveman")`
+ ```
+ 
+ ---
+ 
+-## 4. Context Compaction
+-*Use when context is filling up with long texts, to save input tokens.*
++## 5. Context compaction prompt
+ 
+ ```text
+-TOKEN OPTIMIZATION.
+-
+-Use the `compress_markdown("path/to/file.md")` tool before reading any long documentation in this task. Never use regular `read` on docs larger than 100 lines.
++Compact context now.
+ 
+-After compression, summarize what you learned in 2-3 bullet points and discard the original verbose content from your mental context.
++1. Save current state with `compact_conversation_state()`
++2. Use `compact_logs()` for long logs
++3. Use `compact_diff()` for long diffs
++4. If this is a stable milestone, promote it with `promote_summary_to_checkpoint()`
++5. Drop verbose failed attempts from active context
+ ```
+ 
+ ---
+ 
+-## 5. Session Memory
+-*Use when you need to recall or persist decisions and architectural choices.*
++## 6. Foundation stop prompt
+ 
+ ```text
+-MEMORY MANAGEMENT.
++Foundation audit first.
+ 
+-Use `search_observations("keyword")` to find previously saved decisions or learnings.
+-Use `save_observation("decision text")` to persist important decisions for future reference.
+-Use `save_project_state("decisions", "description")` to update formal project state.
++- Check the touched code for blockers before adding new behavior
++- If `validate_bad_code` returns blockers, stop feature work
++- Explain the rotten foundation clearly
++- Propose the smallest safe cleanup first
+ ```
+diff --git a/README.md b/README.md
+index 0862639..37c637c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+ # Stack Perfeita MCP
+ 
+-**MCP server that disciplines coding agents in real projects: anti-hallucination, code validation, and state checkpoints.** Move from vibe coding to rules + active validation.
++**MCP server for real coding agents: anti-hallucination, bad-code gates, checkpoint/resume, context compaction, and strict output hygiene.**
+ 
+ [![Cursor](https://img.shields.io/badge/Cursor-Ready-purple)](https://cursor.com)
+ [![Windsurf](https://img.shields.io/badge/Windsurf-Ready-blue)](https://windsurf.com)
+@@ -8,43 +8,51 @@
+ [![VS Code](https://img.shields.io/badge/VS_Code-Ready-blue)](https://code.visualstudio.com)
+ [![npm version](https://img.shields.io/npm/v/stack-perfeita-mcp.svg)](https://www.npmjs.com/package/stack-perfeita-mcp)
+ 
+-## Why This Instead of a System Prompt?
++## Why this instead of a static system prompt?
+ 
+-A system prompt is static text. Stack Perfeita is a **live MCP server** that provides:
+-- **Executable validation** — `validate_bad_code` and `dependency_validate` actually check code, not just ask the LLM to self-police.
+-- **State checkpoints** — `checkpoint_task` / `resume_task` let the agent roll back to a known-good state after failures.
+-- **Progressive disclosure** — rules are loaded on-demand via tools, not dumped into context all at once.
++A static system prompt can ask for discipline. Stack Perfeita can **enforce parts of it at runtime**:
++
++- **Executable validation** — `validate_bad_code`, `dependency_validate`, and `validate_response_style` check outputs instead of trusting self-policing.
++- **Formal state** — `get_project_state`, `checkpoint_task`, `list_checkpoints`, and `resume_task` reduce drift across long sessions.
++- **Progressive disclosure** — rules are loaded on demand instead of dumping every policy into context at once.
++- **Project activation** — `activate_project()` builds a usable manifest in one call.
+ 
+ ---
+ 
+-## Quick Install (60 seconds)
++## Install
++
++### Public package names
++- **npm package:** `stack-perfeita-mcp`
++- **setup CLI:** `stack-perfeita`
++- **server name in IDEs:** `stack-perfeita`
++- **human-facing product name:** **Stack Perfeita MCP**
++
++### Fast path
+ 
+ ```bash
+-# Install globally
+ npm install -g stack-perfeita-mcp
+-
+-# In your project folder, generate IDE config files:
+-stack-perfeita
++stack-perfeita init
+ ```
+ 
+-This generates `.cursorrules`, `.windsurfrules`, and `opencode.json` pointing to the MCP server. Each project uses its own `ai-rules/` folder for project-specific rules.
++That does two things:
+ 
+-### Set Up Your Project Rules
++1. Generates IDE config files (`.cursorrules`, `.windsurfrules`, `.github/copilot-instructions.md`, `opencode.json`)
++2. Bootstraps starter `ai-rules/` and `.claude/skills/`
+ 
+-Copy the starter rules into your project:
++### Other setup modes
+ 
+ ```bash
+-# In your project root:
+-mkdir ai-rules
+-# Copy or create your project-specific rules in ai-rules/
++stack-perfeita           # generate IDE config only
++stack-perfeita init      # config + starter rules + starter skills
++stack-perfeita --minimal # only .cursorrules
++stack-perfeita --force   # overwrite existing generated files
+ ```
+ 
+ ---
+ 
+-## Native IDE Configuration
++## Native IDE configuration
+ 
+-### Cursor (most popular)
+-In Cursor Settings -> MCP -> Add Custom:
++### Cursor
+ 
+ ```json
+ {
+@@ -56,10 +64,8 @@ In Cursor Settings -> MCP -> Add Custom:
+   }
+ }
+ ```
+-**Restart Cursor** -> done!
+ 
+ ### Windsurf
+-Windsurf -> **Plugins** (sidebar) -> **Add Custom MCP**:
+ 
+ ```json
+ {
+@@ -73,158 +79,218 @@ Windsurf -> **Plugins** (sidebar) -> **Add Custom MCP**:
+ ```
+ 
+ ### Claude Desktop / Claude Code
++
+ ```bash
+ claude mcp add stack-perfeita --command "npx stack-perfeita-mcp --rules-dir ./ai-rules"
+ ```
+ 
+-### VS Code + GitHub Copilot
+-Place `.github/copilot-instructions.md` in your project root. The `stack-perfeita` CLI does this automatically.
++### VS Code + Copilot
++
++Run `stack-perfeita` or `stack-perfeita init` in the project root. It will generate `.github/copilot-instructions.md` automatically.
+ 
+ ---
+ 
+-## How It Works
++## How it works
+ 
+-```
+-Your Project
++```text
++Project root
++    |
++    +--> ai-rules/               # project rules
++    +--> .claude/skills/         # reusable task playbooks
++    +--> .claude/project_state.json
+     |
+     v
+-stack-perfeita (setup) --> generates .cursorrules + opencode.json
++stack-perfeita (setup)
++    |
++    +--> generates IDE config files
+     |
+     v
+-MCP Server (npx stack-perfeita-mcp)
++npx stack-perfeita-mcp --rules-dir ./ai-rules
+     |
+-    +--> ai-rules/        (your project rules)
+-    +--> .claude/skills/  (task playbooks)
+-    +--> .claude/project_state.json  (state checkpoints)
++    +--> activation
++    +--> validation
++    +--> checkpoints
++    +--> compaction
++    +--> rule / skill retrieval
+     |
+     v
+-IDE Agent <-- tools: validate, search, checkpoint, resume
++IDE agent
+ ```
+ 
+ ---
+ 
+-## Core Features
++## Core features
+ 
+-- **PASS/HALT validation** — `validate_bad_code` stops bad code (15 patterns + AST metrics + risk score), `dependency_validate` catches hallucinated imports.
+-- **State checkpoints** — save project state, create checkpoints, resume from any point. No more losing context in long sessions.
+-- **Compaction layer** — `compact_logs`, `compact_diff`, `compact_conversation_state` for long sessions.
+-- **Model profiles** — `get_model_profile` returns tuned config for Claude, GPT, or Gemini.
+-- **Project activation** — `activate_project` builds a full manifest (stack, rules, skills, state, fingerprint) in one call.
+-- **Adaptive terseness** — behavioral rules enforce concise output, expanding only when risk or debugging demands it.
+-- **Progressive disclosure** — rules loaded on-demand via tools, not dumped into context.
+-- **Python support** — bad patterns for Python code too (empty except, print debug, TODO).
++- **Rotten Foundation Rule** — do not build on top of obviously broken code.
++- **Rule of 2** — same failure twice -> HALT.
++- **Code gate** — blockers, warnings, advisories, plus AST metrics.
++- **Response-style gate** — block excitation tokens, filler, and verbose narration.
++- **State + checkpoints** — resume work without asking the LLM to “remember harder”.
++- **Compaction tools** — shrink logs, diffs, and long sessions before they rot context.
++- **Model profiles** — Claude / GPT / Gemini guidance without fragmenting the product philosophy.
++- **Project activation** — one-call manifest for stack, rules, skills, state, and cache strategy.
++- **Caveman Mode** — explicit ultra-compact mode when token pressure is real.
+ 
+ ---
+ 
+-## Demo: Before vs After
+-
+-**Without Stack Perfeita:**
+-> Agent generates code with `any` types, hallucinated imports, and no validation.
+-> Session drifts after 20 messages, losing track of decisions.
+-
+-**With Stack Perfeita:**
+-> `validate_bad_code` catches `any` before commit (RISK SCORE: 15/100 — HALT).
+-> `dependency_validate` catches phantom import `@utils/helpers`.
+-> `checkpoint_task("auth-done")` saves state.
+-> Next session: `resume_task()` restores full context.
+-
+----
+-
+-## Exposed Tools (25 tools)
++## Exposed tools (28 tools)
+ 
+ | Tool | What it does |
+ |---|---|
+-| `list_rules()` | Lists all available rule files |
+-| `get_rules(topic, mode)` | Reads rules (`summary` = description only, `full` = entire content) |
+-| `get_context(module_path)` | Returns CONTEXT.md for a module folder |
+-| `validate_bad_code(code)` | **15 patterns + AST metrics** -> risk score 0-100 PASS/WARN/HALT |
+-| `validate_git_commit(msg)` | Validates Conventional Commits format |
+-| `dependency_validate(path)` | Do imports exist? Checks relative, bare, tsconfig, Node builtins |
+-| `smart_outline(path)` | AST-based outline of all symbols in a file |
+-| `smart_unfold(path, name)` | Extracts just one specific function from a long file |
+-| `smart_read(path, mode)` | Intelligent reader: auto/outline/full/symbol modes |
+-| `list_skills()` | Lists available playbooks in `.claude/skills` |
+-| `get_skill(name)` | Loads instructions for a specific task |
+-| `save_observation(obs)` | Saves architectural decisions across chats |
+-| `search_observations(q)` | Searches project memory |
+-| `get_project_state(section?)` | Returns full project state or a specific section |
+-| `save_project_state(section, content)` | Updates a section of project state |
+-| `checkpoint_task(label)` | Creates a snapshot of current state for rollback |
+-| `resume_task(label?)` | Restores state from a checkpoint |
+-| `run_command(name, args)` | Runs a structured script from `ai-rules/commands` |
+-| `compress_markdown(path)` | Minifies markdown in-memory to save input tokens |
+-| `compact_conversation_state(summary)` | Saves structured conversation state to free context |
+-| `compact_logs(log_text)` | Extracts errors/warnings from logs, discards noise |
+-| `compact_diff(diff_text)` | Summarizes unified diff: files, hunks, line counts |
+-| `promote_summary_to_checkpoint(label)` | Promotes compacted state to a formal checkpoint |
+-| `get_model_profile(model)` | Returns tuned config for Claude, GPT, or Gemini |
+-| `activate_project(root?)` | Builds full project manifest with fingerprint |
+-| `get_rules_bundle(mode)` | All rules in stable order for prompt caching |
++| `list_rules()` | Lists rule files available in `ai-rules/` |
++| `get_rules(topic, mode)` | Reads one rule file by topic or filename |
++| `get_context(module_path)` | Reads a module-level `CONTEXT.md` |
++| `get_rules_bundle(mode)` | Stable, cache-friendly rules index or full bundle |
++| `validate_bad_code(code, file_path?)` | Blockers + warnings + advisories + AST metrics |
++| `validate_response_style(text, mode)` | Blocks excitation tokens, filler, and verbose narration |
++| `validate_git_commit(message)` | Checks Conventional Commits format |
++| `dependency_validate(file_path)` | Fast-path detector for hallucinated imports/assets |
++| `smart_outline(file_path)` | Structural outline of a file |
++| `smart_unfold(file_path, symbol_name)` | Expands a specific symbol only |
++| `smart_read(file_path, mode, symbol_name?)` | Intelligent reader for long files |
++| `list_skills()` | Lists reusable playbooks in `.claude/skills/` |
++| `get_skill(name)` | Loads one specific skill |
++| `run_command(name, args?)` | Returns predefined command prompts from `ai-rules/commands/` |
++| `save_observation(observation)` | Persists important observations |
++| `search_observations(query)` | Searches saved observations |
++| `get_project_state(section?)` | Reads full formal project state or one section |
++| `save_project_state(section, content)` | Updates one state section |
++| `checkpoint_task(label)` | Saves checkpoint snapshot |
++| `list_checkpoints()` | Lists saved checkpoints |
++| `resume_task(label?)` | Restores state from checkpoint |
++| `compact_conversation_state(summary)` | Stores condensed conversation state |
++| `compact_logs(log_text, keep_errors?)` | Keeps useful signal, discards noise |
++| `compact_diff(diff_text)` | Summarizes changed files/hunks |
++| `promote_summary_to_checkpoint(label)` | Turns compacted state into a formal checkpoint |
++| `get_model_profile(model)` | Returns Claude / GPT / Gemini profile guidance |
++| `activate_project(project_root?)` | Builds full project manifest |
++| `compress_markdown(path)` | Token-minifies long markdown files |
+ 
+ ---
+ 
+ ## Architecture
+ 
+-```
++```text
+ src/
+-  index.js          # Entry point: config, server init, connect
+-  config.js         # Constants: RULES_DIR, TOPIC_MAP, BAD_PATTERNS
+-  helpers.js        # readFile, minifyTokens, safeResolvePath
+-  rate-limiter.js   # Anti-loop rate limiter
+-  resources.js      # MCP resource registrations
+-  rules.js          # list_rules, get_rules, get_context
+-  validators.js     # validate_bad_code (regex+AST), validate_git_commit, dependency_validate
++  index.js          # server entrypoint
++  config.js         # constants, rules metadata, bad-code + response-style patterns
++  helpers.js        # file reading, token minify, path helpers
++  rate-limiter.js   # anti-loop protection on hot tools
++  resources.js      # MCP resources for ai-rules
++  rules.js          # list_rules, get_rules, get_context, get_rules_bundle
++  validators.js     # code validation, response-style validation, dependency validation
+   skills.js         # list_skills, get_skill
+-  code-reading.js   # smart_outline, smart_unfold, smart_read (AST via acorn-loose)
++  code-reading.js   # smart_outline, smart_unfold, smart_read, AST metrics
+   commands.js       # run_command
+   memory.js         # save_observation, search_observations
+-  project-state.js  # get/save/checkpoint/resume project state
+-  compaction.js     # compact_logs, compact_diff, compact_conversation_state, promote_summary_to_checkpoint
+-  profiles.js       # get_model_profile (Claude, GPT, Gemini)
+-  activation.js     # activate_project (manifest builder with fingerprint)
++  project-state.js  # formal state + checkpoints
++  compaction.js     # compaction helpers for logs/diffs/state
++  profiles.js       # model-specific operating profiles
++  activation.js     # project manifest builder
+ ```
+ 
+-Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.md` rule).
++The goal is modularity by responsibility. Some analyzers are necessarily larger, but the design keeps the server split by concern rather than one monolithic “god file”.
+ 
+ ---
+ 
+-## Prompt Recipes
++## Prompt recipes
++
++### 1. New project / fresh session
++
++```text
++Activate Stack Perfeita in this project.
++
++1. Call activate_project()
++2. Call get_model_profile("claude")   # or gpt / gemini
++3. Call get_rules_bundle("index")
++4. Call get_project_state()
++5. Work in adaptive terseness
++6. Before final code: validate_bad_code
++7. Before new imports/assets: dependency_validate
++8. If the same failure happens twice -> HALT
++9. If foundation is rotten -> stop feature work and propose fixing the base first
++```
++
++### 2. Resume an ongoing project
++
++```text
++Resume this project with Stack Perfeita.
++
++1. Call activate_project()
++2. Call get_project_state()
++3. Call list_checkpoints()
++4. If needed, call resume_task()
++5. Load only the rules needed for the current task
++6. Continue from the last valid step, not from scratch
++```
++
++### 3. Reinforce essentials / anti-loop / anti-drift
++
++```text
++Reinforce Stack Perfeita essentials.
++
++- Return to concise mode
++- Reload current state with get_project_state()
++- Re-read only the rule needed
++- Same failure twice -> HALT
++- Validate code before delivery
++- Validate imports after adding them
++- Do not invent APIs, files, or behavior
++- Continue exactly from the last proven step
++```
++
++### 4. Force ultra-compact output
++
++```text
++CAVEMAN MODE: ACTIVE.
++
++- Zero excitation tokens
++- No filler, no warm-up, no process narration
++- Keep technical precision
++- If answer becomes long prose, run validate_response_style in caveman mode first
++```
++
++---
+ 
+-### Ignition (Session Start)
+-> "STACK-PERFEITA MCP ACTIVE. Call `list_rules`, read `get_rules('behavior')`, call `get_project_state`. OUTPUT-GATE MANDATORY."
++## Demo
+ 
+-### Checkpoint (Course Correction)
+-> "CHECKPOINT MCP. Call `checkpoint_task('before-refactor')`. Return to concise mode."
++**Without Stack Perfeita**
++> Agent invents imports, writes code with `any`, loses track after a long session.
+ 
+-### State Recovery
+-> "Resume from last checkpoint. Call `resume_task` and continue from where we left off."
++**With Stack Perfeita**
++> `validate_bad_code` flags `any` as a blocker -> HALT.
++> `dependency_validate` catches a phantom import before merge.
++> `checkpoint_task("before-auth-refactor")` creates rollback point.
++> Next session uses `list_checkpoints()` + `resume_task()` to continue from a proven state.
+ 
+ ---
+ 
+ ## Roadmap
+ 
+-### Shipped (v4.0)
+-- Modular architecture (15 modules)
+-- 25 MCP tools including state/checkpoint/resume, compaction, profiles, activation
+-- AST-based code validation with risk scoring (acorn-loose)
+-- Compaction layer for long sessions
+-- Model-specific profiles (Claude, GPT, Gemini)
+-- Project activation manifest with fingerprint
+-- Per-project setup via npx
+-- 80+ tests, zero dependencies beyond MCP SDK + zod + acorn
++### Shipped
++- Modular server architecture
++- 28 MCP tools
++- Code gate + response-style gate
++- Formal project state + checkpoint listing/resume
++- Context compaction helpers
++- Project activation manifest
++- Bootstrap installer for per-project starter packs
++- Model profiles for Claude / GPT / Gemini
+ 
+ ### Next
+-- Multi-language AST support (Python via tree-sitter)
+-- Semantic search across observations
+-- Auto-compaction triggers based on token count
+-- Remote project state sync
++- Deeper module resolution for monorepos / package exports
++- Better TypeScript-aware parsing beyond tolerant AST fallback
++- Automatic state trimming based on growth thresholds
++- Change-set validation against actual diffs
++- Foundation audit as a first-class tool
+ 
+ ---
+ 
+ ## Contributing
+ 
+-1. **New pattern in `validate_bad_code`** -> PR in `src/config.js` (BAD_PATTERNS array)
+-2. **New rule** -> `ai-rules/12-new-rule.md`
+-3. **New Slash Command** -> `ai-rules/commands/`
++1. **New bad-code or response-style pattern** -> `src/config.js`
++2. **New rule** -> `ai-rules/`
++3. **New reusable prompt command** -> `ai-rules/commands/`
++4. **New workflow playbook** -> `.claude/skills/`
+ 
+-**Star if it helped your workflow!**
++**If this improves your agent workflow, star the repo.**
+diff --git a/ai-rules/01-ai-workflow-strict.md b/ai-rules/01-ai-workflow-strict.md
+index ffbda3f..4675e31 100644
+--- a/ai-rules/01-ai-workflow-strict.md
++++ b/ai-rules/01-ai-workflow-strict.md
+@@ -1,35 +1,44 @@
+-# AIPIHKAL Protocol: The True Strict Workflow (Anti-Hallucination)
++# AIPIHKAL Protocol: Strict Workflow for Real Tasks
+ 
+-> **META:** This file defines the fundamental behavior rules, tool execution, and hallucination mitigation for any LLM operating in this project. **Under no circumstances** can the guidelines below be ignored.
++> **META:** This file defines the operational invariants for long-running coding sessions: evidence first, zero blind looping, and no delivery without verification.
+ 
+ ---
+ 
+-## 1. The Rule of 2 (Anti-Loop and Anti-Delirium)
+-- **End of Trial and Error:** You are forbidden from entering a loop guessing code.
+-- **How it works:** If you generate code, run a test or script and it **fails**, you have the right to **one (1) single correction attempt** by analyzing the root cause.
+-- **If attempt 2 fails:** Stop coding immediately (HALT). Return to the human saying: `"LOOP DETECTED. Manual intervention required. Failed at X and Y."`
+-- **NEVER** try a third blind correction.
+-
+-## 2. Anti-Hallucination Rules (Grounded Reality)
+-- **Demand Full Context:** Never assume the existence of files, folders, libraries or variables.
+-- **NEVER code in the dark:** It's forbidden to guess method names from a library. Consult the documentation, existing tests, or use the `dependency_validate` and `smart_outline` / `smart_unfold` tools.
+-- **Mandatory Proof:** Immediately after modifying a file (`write` / `edit`), you **MUST** run a verification (Linter, Compiler, or read the modified file) to prove it worked. Never claim "I modified the file" without the proof of reading it afterwards.
+-
+-## 3. Task Management (Zero Loop)
+-- **One Step at a Time:** Strictly solve one item at a time.
+-- The human is the **Final Arbiter of State**. In case of disaster (e.g., breaking dependencies in bash), warn immediately and ask the user to run `git status`.
+-
+-## 4. The MANDATORY Output-Gate (Verification Gate)
+-Before delivering any final response:
+-
+-1. List the prompt requirements.
+-2. Mark each one: ✓ implemented | ✗ omitted + reason.
+-3. Ensure validation tools ran without error (`validate_bad_code` and `dependency_validate`).
+-
+-| Claim | Requires | Insufficient (Hallucination) |
+-|-------|--------|-------------|
+-| "Tests pass" | Test output: 0 failures | "The logic looks correct" |
+-| "Build works" | Build command: exit 0 | "Linter passed" |
+-| "Bug fixed" | Symptom test: passes | "I changed the variable" |
+-
+-Without filled OUTPUT-GATE, you failed the system.
++## 1. Rule of 2 (Anti-Loop)
++- If code/test/run fails once -> analyze root cause.
++- You get **one correction attempt**.
++- If the second attempt fails for the same or a very similar reason -> **HALT**.
++- Report the blocker clearly. Do not keep guessing.
++
++## 2. Grounded work only
++- Never assume files, folders, imports, APIs, or symbols exist.
++- Before editing large code, inspect structure first (`smart_outline`, `smart_read`, `smart_unfold`).
++- Before claiming a new import/path works, validate it.
++- Before long sessions, activate project context and read state instead of “trying to remember”.
++
++## 3. Mandatory proof after changes
++Immediately after a real modification, collect proof:
++- read the changed file,
++- run the relevant test/build/lint/typecheck,
++- or produce another concrete verification signal.
++
++Never claim “done” without proof.
++
++## 4. One step at a time
++- Solve one concrete problem at a time.
++- Avoid hidden scope expansion during a bugfix.
++- If the base is rotten, stop the feature and fix the base first.
++
++## 5. Output gate
++Before delivering a final answer:
++1. Requirements checked.
++2. Code validated if code changed.
++3. Imports/assets validated if new references were introduced.
++4. Long prose checked for filler if needed.
++5. Claims backed by evidence.
++
++| Claim | Requires | Not enough |
++|---|---|---|
++| “tests pass” | real test output | “logic looks right” |
++| “build works” | build exit 0 | “linter passed” |
++| “bug fixed” | symptom no longer reproduces | “I changed the code” |
+diff --git a/ai-rules/03-token-economy.md b/ai-rules/03-token-economy.md
+index 58fe477..6dd05a1 100644
+--- a/ai-rules/03-token-economy.md
++++ b/ai-rules/03-token-economy.md
+@@ -1,37 +1,40 @@
+ # 03 - Token Economy & Context Management (2026)
+ 
+-> **META:** LLMs have limited context windows and suffer from attention degradation (lost in the middle). The goal is not just "fewer tokens" but **intentional context management**: cache, compact, clear, and recover.
+-
+-## 1. Absolute Blocking of "Excitation Tokens" and Filler Words
+-The AI is **STRICTLY PROHIBITED** from using conversational language, preambles or conclusions.
+-- **DO NOT USE:** "Humm, let me think...", "I'll analyze the code...", "Got it!", "Here's the updated code", "Right, I'll do that".
+-- **DIRECT ACTION:** If the user asks "Create function X", the AI should only invoke the edit tool (`edit`/`write`) or return the code block. Zero accompaniment text, unless it's a specifically requested technical explanation.
+-
+-```
+-BAD — 40 tokens of noise:
+-"Humm, let me think... Got it! I'll analyze the code and create the function you asked for. Here it is:"
+-function calculateTax(amount) { return amount * 0.1; }
+-"Done! The function was created successfully."
+-
+-GOOD — 0 tokens of noise:
+-function calculateTax(amount) { return amount * 0.1; }
+-```
+-
+-## 2. Context Management Strategy (2026)
+-Beyond token counting, modern LLM usage requires **active context lifecycle management**:
+-
+-- **Cache:** Load rules once at session start via MCP resources. Reuse — don't re-read the same file every turn.
+-- **Compact:** When context fills up or after a complex task, summarize state into bullet points and discard verbose code/logs from mental context. Use `compress_markdown` tool for long documentation files.
+-- **Clear:** When switching topics, mentally discard previous task context. Each task gets its own "fresh window" of reasoning.
+-- **Recover:** If you need previous context that was cleared, use `search_observations` to retrieve saved decisions from session memory.
+-
+-## 3. Semantic Summarization (Mandatory)
+-- During long conversations or multi-step tasks, the AI **MUST NOT** carry the complete history of failed attempts.
+-- **Rule:** Every 4-5 interactions in the same task, or after completing a difficult refactor, generate a short internal summary (e.g., "State: Endpoint X created. Missing Frontend Y") and mentally discard the verbose code and error logs.
+-
+-## 4. Format Optimization (Structural Optimization)
+-- For reading or writing internal configuration data or structured plans, **prefer YAML or Markdown Lists over JSON**. JSON consumes 20-30% more tokens due to braces (`{}`) and mandatory double quotes.
+-
+-## 5. Smart Log Reading (Relevance Filtering)
+-- **NEVER** read entire log files or error outputs exceeding 100 lines.
+-- If a build command fails and spits out 500 lines, use `tail -n 50` or the `read` tool with `offset` and `limit` to read only the final stack trace. Focus on the root cause error.
++> **META:** Goal is not just “fewer tokens”. Goal is **high-signal context**: block filler, compact aggressively, preserve state, and recover only what is relevant.
++
++## 1. Hard block on excitation tokens
++The AI must not waste tokens on warm-up, hesitation, or process narration.
++
++Blocked examples:
++- "Humm, let me think..."
++- "Got it, I'll analyze the code"
++- "Understood, here is the updated version"
++- "Agora vou criar a função"
++- "Aqui está o código abaixo"
++
++Preferred behavior:
++- If code is requested -> return code or take the tool action.
++- If explanation is requested -> answer directly, without warm-up.
++- If token pressure is high -> explicitly activate `CAVEMAN MODE: ACTIVE`.
++
++## 2. Context lifecycle
++Use a deliberate lifecycle:
++- **Activate:** load stable project context once.
++- **Cache:** keep rules/manifests stable and reusable.
++- **Compact:** summarize long logs, diffs, and long session state.
++- **Recover:** restore only the needed checkpoint, state, or observation.
++- **Drop noise:** failed attempts should not stay in active context forever.
++
++## 3. Semantic compaction
++- Do not carry the full history of failed attempts.
++- After a milestone, compress state into a short summary.
++- Prefer compacted state + checkpoints over replaying the whole conversation.
++
++## 4. Output hygiene
++- Before long prose, use `validate_response_style` if the answer risks growing noisy.
++- Caveman mode is allowed and encouraged under token pressure, but technical precision must stay intact.
++
++## 5. Long-file and long-log discipline
++- Avoid dumping entire large docs/logs into active context.
++- Prefer structure first (`smart_read`, `smart_outline`, compaction tools).
++- Read only the portion needed for the current step.
+diff --git a/ai-rules/10-llm-behavioral-rules.md b/ai-rules/10-llm-behavioral-rules.md
+index 536df71..df7a1b8 100644
+--- a/ai-rules/10-llm-behavioral-rules.md
++++ b/ai-rules/10-llm-behavioral-rules.md
+@@ -1,64 +1,57 @@
+-# 10 - Universal Behavioral Rules for LLMs (Token Optimizer)
+-
+-> **META:** Rules valid for any modern LLM (Gemini, Claude, GPT). Written in terms of observable behavior — not dependent on benchmark, version or specific capability. Focus on **token reduction** and **context window management**.
+-
+-## 1. CAVEMAN MODE (Default)
+-Default: Write in ultra-compact style to save output tokens, unless the user asks otherwise.
+-
+-- **Rules:**
+-  - Cut articles (the, a, an, o, a, os, as).
+-  - Use short synonyms ("fix" not "implement a solution", "big" not "extensive").
+-  - Use arrows (`->`) for causality instead of "because" or "then".
+-  - Cut empty transitions ("however", "furthermore", "therefore").
+-  - Use sentence fragments. Exact technical terms unchanged. Code blocks unchanged.
+-
+-**Pattern:** `[Problem/Cause] -> [Solution/Action] -> [Result]`
+-
+-> **NORMAL (100 tokens):** "Humm, the error is happening because the users array is empty before render. To fix it, you need to add a length check in the map to not break the screen."
+-> **CAVEMAN (20 tokens):** "Array `users` empty before render -> Error. Add `users?.length` in `.map()`. Fix below:"
+-
+-**Clarity Frontier (Exception):** Disable caveman and use clear language ONLY for: Security Alerts (DROP TABLE) and irreversible confirmations.
+-
+-## 2. Absolute Blocking of Excitation and Hesitation Tokens
+-PROHIBITED in any response:
+-- **Hesitation:** "wait", "humm", "let me think", "let me see", "I'll analyze"
+-- **Verbal warm-up:** "understood", "right", "okay then", "alright", "sure"
+-- **Empty courtesy:** "of course", "absolutely", "happy to help"
+-- **Commentary about process:** "now I'll create", "the next step is"
+-- **Repeating the user's question.**
+-
+-## 3. The "Rule of 2" (Anti-Loop and Anti-Delirium)
+-If you suggest code and it **fails on execution** due to syntax, type, or crash:
+-1. **Attempt 1:** Analyze the error, read the file, fix it.
+-2. **Attempt 2:** If it fails **AGAIN** for the same or similar reason, **STOP IMMEDIATELY (HALT)**.
+-3. **Action:** Tell the user: `LOOP DETECTED. Manual intervention required.` and list your two failed attempts. **NEVER try a 3rd consecutive time blindly.**
+-
+-## 4. Red Flags — Rationalizations vs Reality
+-Never declare success without real proof.
+-
+-| Rationalization (HALLUCINATION SIGNAL) | Correct Action |
+-|----------------|-----------|
+-| "It should work now" | Run the test or script. Don't assume. |
+-| "I'm confident" | Confidence ≠ Evidence. |
+-| "Linter passed" | Linter ≠ Compiler or Test. |
+-| "It looks correct" | Looking ≠ Being correct. |
+-| "I think the library exports X" | Run `grep` or `read` to prove. |
+-
+-If any rationalization appears in your mind: stop and do the real check before responding.
+-
+-## 5. Context Window Management (2026)
+-Modern LLMs benefit from active context management, not just token counting:
+-
+-- **Prioritize actionable information** at the start and end of context (primacy/recency effect).
+-- **Use `compress_markdown`** for long documentation files before reading them.
+-- **Delegate validation to MCP tools** (`validate_bad_code`, `dependency_validate`) instead of trying to verify mentally.
+-- **When context fills up:** summarize current state into bullet points, discard verbose code/logs, and continue with the compressed state.
+-
+-## 6. Decision Framework (Instead of Rigid ALWAYS/NEVER)
+-Instead of absolute rules for every case, use this framework:
+-
+-- **Default:** Follow the rule as stated.
+-- **Exception:** Override when the situation clearly warrants it AND you can justify why.
+-- **Recovery:** If you override and it turns out wrong, revert to the default and acknowledge the override was incorrect.
+-
+-Example: "Default: use `const`. Exception: `let` when a loop accumulator is genuinely needed. Recovery: if `let` caused mutation bugs, refactor to use `const` with pure functions."
++# 10 - Universal Behavioral Rules for LLMs
++
++> **META:** These rules are about observable behavior in modern coding-agent workflows: less noise, less drift, more evidence.
++
++## 1. Default mode: Adaptive terseness
++Default behavior should be concise and direct.
++- Short answer when task is clear.
++- Expand only when ambiguity, debugging risk, architecture trade-off, or security risk justifies it.
++- Avoid narration about your own process.
++
++## 2. CAVEMAN MODE (Explicit high-compression mode)
++When token pressure is high, the user may activate:
++
++`CAVEMAN MODE: ACTIVE`
++
++In that mode:
++- cut filler,
++- use short direct sentences,
++- keep exact technical terms,
++- prefer action -> evidence -> result,
++- never sacrifice correctness for brevity.
++
++## 3. Hard block on excitation / hesitation tokens
++Do not use:
++- hesitation: "humm", "wait", "let me think", "vou analisar"
++- warm-up: "understood", "right", "okay then", "certo"
++- empty courtesy: "of course", "happy to help"
++- process narration: "now I will create", "the next step is"
++- question repetition that adds no value
++
++If a response starts drifting into filler, tighten it immediately.
++
++## 4. Rule of 2
++If code fails twice for the same or similar reason:
++1. stop,
++2. report root cause,
++3. do not keep guessing.
++
++## 5. Never declare success without proof
++Confidence is not evidence.
++
++| Bad signal | Correct action |
++|---|---|
++| "It should work now" | run the check |
++| "Looks correct" | verify behavior |
++| "Linter passed" | run build/test if claim needs it |
++| "I think this import exists" | validate it |
++
++## 6. Context discipline
++- Keep stable context stable.
++- Load only the needed rule for the current task.
++- Use state, checkpoints, and compaction instead of relying on raw conversation length.
++- Prefer runtime validators over mental self-checking.
++
++## 7. Response gate for prose
++If the answer is long enough to risk verbosity, validate style before sending.
++This helps enforce zero excitation tokens in practice, not only as ideology.
+diff --git a/bin/setup-ide.js b/bin/setup-ide.js
+index 5b3357c..ff2b14b 100644
+--- a/bin/setup-ide.js
++++ b/bin/setup-ide.js
+@@ -2,48 +2,52 @@
+ 
+ /**
+  * stack-perfeita setup script
+- * Generates IDE configuration files for Stack Perfeita MCP integration.
+- * 
++ * Generates IDE configuration files and can bootstrap starter rules/skills.
++ *
+  * Usage:
+- *   stack-perfeita           # Generate all config files
+- *   stack-perfeita --minimal # Only .cursorrules
+- *   stack-perfeita --force   # Overwrite existing files without asking
++ *   stack-perfeita                 # Generate IDE config files only
++ *   stack-perfeita init            # Generate configs + starter ai-rules + starter skills
++ *   stack-perfeita --bootstrap     # Same as init
++ *   stack-perfeita --minimal       # Only .cursorrules
++ *   stack-perfeita --force         # Overwrite existing files
+  */
+ 
+ import fs from 'fs';
+ import path from 'path';
++import { fileURLToPath } from 'url';
+ 
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const PACKAGE_ROOT = path.resolve(__dirname, '..');
+ const PROJECT_DIR = process.cwd();
+ const args = process.argv.slice(2);
++
+ const FORCE = args.includes('--force');
+ const MINIMAL = args.includes('--minimal');
++const BOOTSTRAP = args.includes('init') || args.includes('--bootstrap');
+ 
+-// The Ignition Prompt embedded directly in IDE rules
+ const IGNITION_PROMPT = `
+-# STACK-PERFEITA MCP - CORE INSTRUCTIONS
+-
+-You are operating under the "Stack-Perfeita" strict ruleset.
+-You MUST use the connected MCP server for codebase validation.
+-
+-## IGNITION SEQUENCE (DO THIS FIRST)
+-Before answering the first user prompt in a new session:
+-1. Call \`list_rules()\` to see available rules
+-2. Call \`get_rules({ topic: "behavior", mode: "summary" })\`
+-3. Call \`get_project_state()\` to check if there is existing project state
+-
+-## ADAPTIVE TERSENESS
+-- Be concise by default. Expand only when ambiguity, risk, or debugging requires it.
+-- No conversational filler ("Humm", "Here is the code", "Understood").
+-- RULE OF 2: If a command/test fails TWICE for the same reason, HALT. Do not try a 3rd time blindly.
+-- Run \`validate_bad_code\` BEFORE outputting any code block.
+-- Run \`dependency_validate\` AFTER suggesting new imports.
+-
+-## OUTPUT-GATE
+-Do not deliver a response without checking:
+-- [ ] Requirements met?
+-- [ ] validate_bad_code: PASS?
+-- [ ] dependency_validate: PASS?
+-- [ ] Concise and precise (no filler)?
++# STACK PERFEITA MCP — IGNITION
++
++Use Stack Perfeita as runtime discipline for this project.
++
++## SESSION START
++1. Call \`activate_project()\`
++2. Call \`get_model_profile(\"claude\")\` or the active provider
++3. Call \`get_rules_bundle(\"index\")\`
++4. Call \`get_project_state()\`
++
++## OPERATING MODE
++- Adaptive terseness by default
++- If token pressure is high: set \`CAVEMAN MODE: ACTIVE\`
++- Zero excitation tokens: no filler, no warm-up, no process narration
++- Rule of 2: same failure twice -> HALT and report root cause
++
++## OUTPUT GATE
++Before shipping code or claiming success:
++- Run \`validate_bad_code\` for code blocks
++- Run \`dependency_validate\` when new imports/assets were introduced
++- Run \`validate_response_style\` before long explanatory prose when needed
++- If foundation is rotten, stop feature work and fix the base first
+ `;
+ 
+ const OPENCODE_CONFIG = {
+@@ -53,7 +57,8 @@ const OPENCODE_CONFIG = {
+     "./ai-rules/01-ai-workflow-strict.md",
+     "./ai-rules/03-token-economy.md",
+     "./ai-rules/05-debugging-mastery.md",
+-    "./ai-rules/10-llm-behavioral-rules.md"
++    "./ai-rules/10-llm-behavioral-rules.md",
++    "./ai-rules/11-systematic-debugging.md"
+   ],
+   "mcp": {
+     "stack-perfeita": {
+@@ -69,36 +74,59 @@ function writeFileSafe(filePath, content, description) {
+     console.log(`[~] Skipped (already exists): ${filePath}`);
+     return false;
+   }
+-  
++
+   const dir = path.dirname(filePath);
+   if (!fs.existsSync(dir)) {
+     fs.mkdirSync(dir, { recursive: true });
+   }
+-  
++
+   fs.writeFileSync(filePath, content.trim() + '\n', 'utf8');
+   console.log(`[+] Generated: ${description}`);
+   return true;
+ }
+ 
++function copyFileSafe(src, dest, description) {
++  if (fs.existsSync(dest) && !FORCE) {
++    return false;
++  }
++  const dir = path.dirname(dest);
++  if (!fs.existsSync(dir)) {
++    fs.mkdirSync(dir, { recursive: true });
++  }
++  fs.copyFileSync(src, dest);
++  if (description) console.log(`[+] Copied: ${description}`);
++  return true;
++}
++
++function copyDirSafe(srcDir, destDir, description) {
++  if (!fs.existsSync(srcDir)) return false;
++  if (!fs.existsSync(destDir)) {
++    fs.mkdirSync(destDir, { recursive: true });
++  }
++
++  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
++  for (const entry of entries) {
++    const srcPath = path.join(srcDir, entry.name);
++    const destPath = path.join(destDir, entry.name);
++
++    if (entry.isDirectory()) {
++      copyDirSafe(srcPath, destPath);
++    } else {
++      copyFileSafe(srcPath, destPath);
++    }
++  }
++
++  if (description) console.log(`[+] Bootstrapped: ${description}`);
++  return true;
++}
++
+ console.log('Stack Perfeita MCP - IDE Setup\n');
+ 
+-// Always generate .cursorrules
+-writeFileSafe(
+-  path.join(PROJECT_DIR, '.cursorrules'),
+-  IGNITION_PROMPT,
+-  '.cursorrules'
+-);
++writeFileSafe(path.join(PROJECT_DIR, '.cursorrules'), IGNITION_PROMPT, '.cursorrules');
+ 
+ if (!MINIMAL) {
+-  // .windsurfrules
+-  writeFileSafe(
+-    path.join(PROJECT_DIR, '.windsurfrules'),
+-    IGNITION_PROMPT,
+-    '.windsurfrules'
+-  );
++  writeFileSafe(path.join(PROJECT_DIR, '.windsurfrules'), IGNITION_PROMPT, '.windsurfrules');
+ 
+-  // .github/copilot-instructions.md - ONLY if it doesn't exist
+-  // (don't overwrite a rich, project-specific version with our generic one)
+   const copilotPath = path.join(PROJECT_DIR, '.github', 'copilot-instructions.md');
+   if (!fs.existsSync(copilotPath) || FORCE) {
+     writeFileSafe(copilotPath, IGNITION_PROMPT, '.github/copilot-instructions.md');
+@@ -106,7 +134,6 @@ if (!MINIMAL) {
+     console.log(`[~] Skipped (project-specific version exists): ${copilotPath}`);
+   }
+ 
+-  // opencode.json
+   writeFileSafe(
+     path.join(PROJECT_DIR, 'opencode.json'),
+     JSON.stringify(OPENCODE_CONFIG, null, 2),
+@@ -114,7 +141,18 @@ if (!MINIMAL) {
+   );
+ }
+ 
+-console.log('\nSetup complete! Your IDE is now configured to follow Stack Perfeita rules.');
++if (BOOTSTRAP) {
++  copyDirSafe(path.join(PACKAGE_ROOT, 'ai-rules'), path.join(PROJECT_DIR, 'ai-rules'), 'ai-rules/ starter pack');
++  copyDirSafe(path.join(PACKAGE_ROOT, '.claude', 'skills'), path.join(PROJECT_DIR, '.claude', 'skills'), '.claude/skills starter pack');
++} else if (!fs.existsSync(path.join(PROJECT_DIR, 'ai-rules'))) {
++  console.log('[!] ai-rules/ not found. Run `stack-perfeita init` to bootstrap starter rules.');
++}
++
++console.log('\nSetup complete.');
+ if (MINIMAL) {
+-  console.log('(Minimal mode: only .cursorrules generated)');
++  console.log('- Minimal mode: only .cursorrules generated');
++}
++if (BOOTSTRAP) {
++  console.log('- Bootstrap mode: starter ai-rules and skills copied');
+ }
++console.log('- MCP server command for IDEs: npx stack-perfeita-mcp --rules-dir ./ai-rules');
+diff --git a/copilot-instructions.md b/copilot-instructions.md
+index 39273bc..a0cd38a 100644
+--- a/copilot-instructions.md
++++ b/copilot-instructions.md
+@@ -1,14 +1,12 @@
+ # GitHub Copilot Instructions (Enxuto)
+ 
+-- **Zero Alucinação:** Siga os padrões já existentes no repositório. Nunca invente APIs, arquivos ou dependências.
+-- **Divulgação Progressiva:** Antes de codar, consulte os arquivos detalhados em `ai-rules/` (ex: `01-ai-workflow-strict.md`, `05-debugging-mastery.md`) caso o escopo exija aprofundamento técnico.
+-- Faça mudanças pequenas e compatíveis com o código atual.
+-- Consulte arquivos similares (`read` ou abra no editor) antes de criar algo novo.
+-- Se houver dúvida ou ambiguidade, proponha um plano curto (bullet points) antes de codar.
+-- Toda mudança de comportamento deve ser acompanhada de teste.
+-- Preserve consistência de nomenclatura, estilo e arquitetura.
+-- **Segurança First:** Não exponha segredos nem introduza práticas inseguras.
+-- Prefira a solução mais simples que funcione bem no projeto.
+-- Se não existir exemplo semelhante no repositório, **PARE**, descreva a suposição e aguarde confirmação.
+-- **Requirement-Lock:** Antes de gerar código, liste cada requisito numerado. Marque ✓ ou ✗ com justificativa. Entrega sem checklist preenchido = output inválido. Rejeite e reinicie.
+-- **Regras Universais LLM:** Consulte `ai-rules/10-llm-behavioral-rules.md` para bloqueio de excitação e comportamento global.
+\ No newline at end of file
++- Zero alucinação: nunca invente APIs, arquivos, imports ou comportamento.
++- Leia só a regra necessária em `ai-rules/` para a tarefa atual.
++- Mudanças pequenas, compatíveis e verificáveis.
++- Antes de código final -> valide com `validate_bad_code`.
++- Antes de imports/assets novos -> valide com `dependency_validate`.
++- Antes de resposta longa -> valide com `validate_response_style`.
++- Se houver fundação podre, pare a feature e proponha corrigir a base.
++- Duas falhas iguais -> HALT.
++- Se o escopo estiver claro, execute. Se estiver ambíguo, confirme.
++- Toda mudança de comportamento deve vir com evidência real.
+diff --git a/opencode.json b/opencode.json
+index 66f1e9f..7348665 100644
+--- a/opencode.json
++++ b/opencode.json
+@@ -11,7 +11,7 @@
+   "mcp": {
+     "stack-perfeita": {
+       "type": "local",
+-      "command": ["node", "./src/index.js", "--rules-dir", "./ai-rules"],
++      "command": ["npx", "stack-perfeita-mcp", "--rules-dir", "./ai-rules"],
+       "enabled": true
+     }
+   }
+diff --git a/package.json b/package.json
+index cbc0078..4cb2adc 100644
+--- a/package.json
++++ b/package.json
+@@ -1,13 +1,21 @@
+ {
+   "name": "stack-perfeita-mcp",
+   "version": "4.1.0",
+-  "description": "MCP server that serves project AI rules to any IDE/LLM agent",
++  "description": "MCP server that disciplines coding agents with validation, state checkpoints, and context control.",
+   "type": "module",
+   "main": "src/index.js",
+   "bin": {
+     "stack-perfeita": "./bin/setup-ide.js",
+     "stack-perfeita-mcp": "./src/index.js"
+   },
++  "files": [
++    "src/",
++    "bin/",
++    "ai-rules/",
++    ".claude/skills/",
++    "README.md",
++    "package.json"
++  ],
+   "scripts": {
+     "start": "node src/index.js",
+     "dev": "node --watch src/index.js",
+@@ -20,7 +28,9 @@
+     "copilot",
+     "ai-rules",
+     "llm",
+-    "coding-standards"
++    "coding-standards",
++    "context-engineering",
++    "agent-runtime"
+   ],
+   "license": "MIT",
+   "dependencies": {
+diff --git a/src/activation.js b/src/activation.js
+index 5588d97..b719618 100644
+--- a/src/activation.js
++++ b/src/activation.js
+@@ -7,44 +7,54 @@
+ import { z } from "zod";
+ import { existsSync, readdirSync, readFileSync } from "fs";
+ import { resolve, join } from "path";
+-import { RULES_DIR, RULE_DESCRIPTIONS, SKILLS_DIR } from "./config.js";
++import { RULES_DIR, RULE_DESCRIPTIONS } from "./config.js";
+ import { loadState } from "./project-state.js";
+ import { rateLimiter } from "./rate-limiter.js";
+ import { readFile } from "./helpers.js";
+ 
+-/**
+- * Generate a simple fingerprint hash from key project files.
+- */
+-function generateFingerprint(projectRoot) {
++function generateFingerprint(projectRoot, rulesDir, skillsDir) {
+   const parts = [];
+ 
+-  // Hash package.json
+   const pkgPath = resolve(projectRoot, "package.json");
+   if (existsSync(pkgPath)) {
+     try {
+       const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+       parts.push(pkg.name || "", pkg.version || "");
+       if (pkg.dependencies) parts.push(Object.keys(pkg.dependencies).sort().join(","));
+-    } catch { /* ignore */ }
++      if (pkg.devDependencies) parts.push(Object.keys(pkg.devDependencies).sort().join(","));
++    } catch {
++      // ignore malformed package.json
++    }
+   }
+ 
+-  // Hash rules list
+-  if (existsSync(RULES_DIR)) {
++  if (existsSync(rulesDir)) {
+     try {
+-      const rules = readdirSync(RULES_DIR).filter(f => f.endsWith(".md")).sort();
++      const rules = readdirSync(rulesDir).filter((file) => file.endsWith(".md")).sort();
+       parts.push(rules.join(","));
+-    } catch { /* ignore */ }
++    } catch {
++      // ignore rule listing errors
++    }
++  }
++
++  if (existsSync(skillsDir)) {
++    try {
++      const skills = readdirSync(skillsDir, { withFileTypes: true })
++        .filter((entry) => entry.isDirectory())
++        .map((entry) => entry.name)
++        .sort();
++      parts.push(skills.join(","));
++    } catch {
++      // ignore skill listing errors
++    }
+   }
+ 
+-  // Simple hash
+-  const str = parts.join("|");
++  const raw = parts.join("|");
+   let hash = 0;
+-  for (let i = 0; i < str.length; i++) {
+-    const chr = str.charCodeAt(i);
+-    hash = ((hash << 5) - hash) + chr;
++  for (let i = 0; i < raw.length; i++) {
++    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+     hash |= 0;
+   }
+-  return Math.abs(hash).toString(16).slice(0, 6);
++  return Math.abs(hash).toString(16).slice(0, 8);
+ }
+ 
+ function readPackageJson(projectRoot) {
+@@ -60,23 +70,23 @@ function readPackageJson(projectRoot) {
+ function parseSkillFrontmatter(content) {
+   const match = content.match(/^---\n([\s\S]*?)\n---/);
+   if (!match) return {};
+-  const fm = {};
++  const frontmatter = {};
+   for (const line of match[1].split("\n")) {
+-    const idx = line.indexOf(":");
+-    if (idx === -1) continue;
+-    const key = line.slice(0, idx).trim();
+-    const val = line.slice(idx + 1).trim();
+-    fm[key] = val;
++    const separator = line.indexOf(":");
++    if (separator === -1) continue;
++    const key = line.slice(0, separator).trim();
++    const value = line.slice(separator + 1).trim();
++    frontmatter[key] = value;
+   }
+-  return fm;
++  return frontmatter;
+ }
+ 
+ export function registerActivationTools(server) {
+   server.tool(
+     "activate_project",
+-    "Activates a project by building a complete manifest: stack info, available rules, skills, current state, and a project fingerprint. Use at session start for full project context in one call.",
++    "Builds a project manifest in one call: stack summary, available rules, skills, state snapshot, and cache strategy. Use at session start.",
+     {
+-      project_root: z.string().optional().describe("Absolute path to project root. Defaults to current working directory."),
++      project_root: z.string().optional().describe("Absolute path to the project root. Defaults to current working directory."),
+     },
+     async ({ project_root }) => {
+       const rateLimitHit = rateLimiter.check("activate_project");
+@@ -85,15 +95,19 @@ export function registerActivationTools(server) {
+       }
+ 
+       const root = project_root ? resolve(project_root) : process.cwd();
++      const rulesDir = project_root ? resolve(root, "ai-rules") : RULES_DIR;
++      const skillsDir = resolve(root, ".claude", "skills");
++      const stateFile = resolve(root, ".claude", "project_state.json");
++
+       const pkg = readPackageJson(root);
+-      const fingerprint = generateFingerprint(root);
++      const fingerprint = generateFingerprint(root, rulesDir, skillsDir);
+ 
+-      // Stack info
+-      let stackLines = [];
++      const stackLines = [];
+       if (pkg) {
+         const deps = pkg.dependencies ? Object.keys(pkg.dependencies) : [];
+         const devDeps = pkg.devDependencies ? Object.keys(pkg.devDependencies) : [];
+         const scripts = pkg.scripts ? Object.keys(pkg.scripts) : [];
++
+         stackLines.push(`- Name: ${pkg.name || "(unnamed)"}`);
+         stackLines.push(`- Version: ${pkg.version || "0.0.0"}`);
+         if (deps.length) stackLines.push(`- Dependencies (${deps.length}): ${deps.slice(0, 10).join(", ")}${deps.length > 10 ? "..." : ""}`);
+@@ -103,86 +117,81 @@ export function registerActivationTools(server) {
+         stackLines.push("- No package.json found");
+       }
+ 
+-      // Rules
+-      let rulesLines = [];
+-      if (existsSync(RULES_DIR)) {
++      const rulesLines = [];
++      if (existsSync(rulesDir)) {
+         try {
+-          const ruleFiles = readdirSync(RULES_DIR).filter(f => f.endsWith(".md")).sort();
++          const ruleFiles = readdirSync(rulesDir).filter((file) => file.endsWith(".md")).sort();
+           for (const file of ruleFiles) {
+-            const desc = RULE_DESCRIPTIONS[file] || "Custom rule file";
+-            rulesLines.push(`- ${file}: ${desc}`);
++            const description = RULE_DESCRIPTIONS[file] || "Custom rule file";
++            rulesLines.push(`- ${file}: ${description}`);
+           }
+         } catch {
+-          rulesLines.push("- Could not read rules directory");
++          rulesLines.push("- Could not read ai-rules directory");
+         }
+       } else {
+         rulesLines.push("- No ai-rules/ directory found");
+       }
+ 
+-      // Skills
+-      let skillsLines = [];
+-      if (existsSync(SKILLS_DIR)) {
++      const skillsLines = [];
++      if (existsSync(skillsDir)) {
+         try {
+-          const dirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
+-            .filter(d => d.isDirectory())
+-            .map(d => d.name);
++          const dirs = readdirSync(skillsDir, { withFileTypes: true })
++            .filter((entry) => entry.isDirectory())
++            .map((entry) => entry.name)
++            .sort();
++
+           for (const dir of dirs) {
+-            const skillPath = join(SKILLS_DIR, dir, "SKILL.md");
+-            if (existsSync(skillPath)) {
+-              const content = readFile(skillPath);
+-              const fm = content ? parseSkillFrontmatter(content) : {};
+-              const name = fm.name || dir;
+-              const desc = fm.description || "No description";
+-              skillsLines.push(`- ${name}: ${desc}`);
+-            }
++            const skillPath = join(skillsDir, dir, "SKILL.md");
++            if (!existsSync(skillPath)) continue;
++            const content = readFile(skillPath);
++            const frontmatter = content ? parseSkillFrontmatter(content) : {};
++            skillsLines.push(`- ${frontmatter.name || dir}: ${frontmatter.description || "No description"}`);
+           }
+         } catch {
+-          skillsLines.push("- Could not read skills directory");
++          skillsLines.push("- Could not read .claude/skills directory");
+         }
+       } else {
+         skillsLines.push("- No .claude/skills/ directory found");
+       }
+ 
+-      // State
+-      const state = loadState();
+-      let stateLines = [];
+-      stateLines.push(`- Objective: ${state.objective || "(not set)"}`);
+-      if (state.next_steps?.length > 0) {
+-        stateLines.push(`- Next steps: ${state.next_steps.join(", ")}`);
+-      }
+-      if (state.decisions?.length > 0) {
+-        stateLines.push(`- Decisions (${state.decisions.length}): ${state.decisions.slice(-3).join(", ")}`);
+-      }
+-      if (state.open_questions?.length > 0) {
+-        stateLines.push(`- Open questions: ${state.open_questions.length}`);
+-      }
+-      const cpCount = state.checkpoints?.length || 0;
+-      stateLines.push(`- Checkpoints: ${cpCount}`);
++      const state = loadState(stateFile);
++      const stateLines = [
++        `- Objective: ${state.objective || "(not set)"}`,
++        `- Checkpoints: ${state.checkpoints?.length || 0}`,
++      ];
++      if (state.next_steps?.length) stateLines.push(`- Next steps: ${state.next_steps.join(", ")}`);
++      if (state.decisions?.length) stateLines.push(`- Recent decisions: ${state.decisions.slice(-3).join(", ")}`);
++      if (state.open_questions?.length) stateLines.push(`- Open questions: ${state.open_questions.length}`);
++      if (state.risks?.length) stateLines.push(`- Risks: ${state.risks.length}`);
+ 
+-      // Assemble manifest
+       const manifest = [
+         `## Project Activated: ${pkg?.name || root}`,
+-        `Fingerprint: ${fingerprint} (package.json + ${rulesLines.length} rules + ${skillsLines.length} skills)`,
++        `- Root: ${root}`,
++        `- Fingerprint: ${fingerprint}`,
+         "",
+         "### Stack",
+         ...stackLines,
+         "",
+-        `### Rules (${rulesLines.length} files)`,
++        `### Rules (${rulesLines.length})`,
+         ...rulesLines,
+         "",
+-        `### Skills (${skillsLines.length} available)`,
++        `### Skills (${skillsLines.length})`,
+         ...skillsLines,
+         "",
+         "### State",
+         ...stateLines,
+         "",
+-        "### Cache Strategy",
+-        "- Call get_rules_bundle('index') first for stable prefix",
+-        "- Load individual rules on-demand via get_rules(topic)",
+-        "- Static: rule files rarely change (cache-friendly)",
+-        "- Volatile: project_state, observations (reload each session)",
++        "### Recommended sequence",
++        "- Call get_model_profile(<provider>) once",
++        "- Call get_rules_bundle('index') as stable prefix",
++        "- Load only the rule needed with get_rules(topic)",
++        "- Use list_checkpoints() before resume_task(label) when resuming older work",
++        "- Before final code: validate_bad_code; before final prose: validate_response_style",
+         "",
+-        "Use get_project_state() for full state, get_rules(topic) for rule details.",
++        "### Cache strategy",
++        "- Static: rules bundle, model profile, stable project manifest",
++        "- Volatile: project state, observations, diffs, logs",
++        "- Prefer compaction for logs/diffs instead of carrying raw output forward",
+       ];
+ 
+       return {
+diff --git a/src/config.js b/src/config.js
+index 302583c..5c9e547 100644
+--- a/src/config.js
++++ b/src/config.js
+@@ -1,6 +1,6 @@
+ /**
+  * Stack Perfeita MCP — Configuration
+- * All constants, topic maps, rule descriptions, and bad code patterns.
++ * All constants, topic maps, rule descriptions, response-style rules, and bad-code patterns.
+  */
+ 
+ import { resolve, dirname } from "path";
+@@ -8,18 +8,26 @@ import { fileURLToPath } from "url";
+ 
+ const __dirname = dirname(fileURLToPath(import.meta.url));
+ const ROOT_DIR = resolve(__dirname, "..");
++const PROJECT_ROOT = resolve(process.cwd());
+ 
+ const args = process.argv.slice(2);
+ const rulesDirFlag = args.indexOf("--rules-dir");
+-const RULES_DIR = rulesDirFlag !== -1
++const RULES_DIR = rulesDirFlag !== -1 && args[rulesDirFlag + 1]
+   ? resolve(args[rulesDirFlag + 1])
+-  : resolve(process.cwd(), "ai-rules");
++  : resolve(PROJECT_ROOT, "ai-rules");
+ 
+ const SRC_DIR = resolve(RULES_DIR, "../src");
+-const SKILLS_DIR = resolve(process.cwd(), ".claude/skills");
++const SKILLS_DIR = resolve(PROJECT_ROOT, ".claude/skills");
+ const COMMANDS_DIR = resolve(RULES_DIR, "commands");
+-const MEMORY_FILE = resolve(process.cwd(), ".claude", "session_memory.json");
+-const PROJECT_STATE_FILE = resolve(process.cwd(), ".claude", "project_state.json");
++const MEMORY_FILE = resolve(PROJECT_ROOT, ".claude", "session_memory.json");
++const PROJECT_STATE_FILE = resolve(PROJECT_ROOT, ".claude", "project_state.json");
++
++const STATE_LIMITS = {
++  maxArrayItems: 50,
++  maxCheckpoints: 20,
++  maxCompactionHistory: 30,
++  maxObservations: 100,
++};
+ 
+ const TOPIC_MAP = {
+   "overview":     "00-project-overview.md",
+@@ -65,7 +73,7 @@ const RULE_DESCRIPTIONS = {
+   "02-coding-standards.md":         "Caveman style — naming, variables, loops, functions",
+   "03-token-economy.md":            "Token compression — block filler, semantic summarization",
+   "04-security-secrets.md":         "OWASP 2025/2026, secrets management, agentic risks",
+-  "05-debugging-mastery.md":        "Structured debugging — no console.log, reproduce-reduce-prove",
++  "05-debugging-mastery.md":        "Structured debugging — no blind logs, reproduce-reduce-prove",
+   "06-ci-cd-testing.md":            "CI/CD as product — pipeline gates, SAST, coverage",
+   "07-frontend-semantic.md":        "Semantic HTML, a11y, CSS modern, Core Web Vitals",
+   "08-backend-architecture.md":     "Backend rules — validation at edge, ACID, stateless, N+1",
+@@ -75,33 +83,44 @@ const RULE_DESCRIPTIONS = {
+ };
+ 
+ const BAD_PATTERNS = [
+-  { regex: /\bany\b/,                              id: "any",          msg: "TypeScript any — infer correct type", lang: "ts" },
+-  { regex: /catch\s*\([^)]*\)\s*\{\s*\}/,         id: "empty-catch",  msg: "Empty catch — Fail Fast, handle the error" },
+-  { regex: /catch\s*\{\s*\}/,                      id: "empty-catch",  msg: "Empty catch — Fail Fast, handle the error" },
+-  { regex: /console\.log\((?!{)/,                  id: "console-log",  msg: "Raw console.log — use structured logger or debugger", lang: "js" },
+-  { regex: /function\s+\w+[^{]{200,}/,            id: "god-function", msg: "God Function — break into smaller functions" },
+-  { regex: /if.*if.*if.*if/,                       id: "arrow-code",   msg: "Arrow code — use Early Returns, reduce nesting" },
+-  { regex: /innerHTML\s*=/,                        id: "innerhtml",    msg: "Unsafe innerHTML — use textContent or replaceChildren" },
+-  { regex: /\bvar\s+/,                             id: "var",          msg: "var detected — use const/let" },
+-  { regex: /[^=!]==[^=]/,                          id: "weak-eq",      msg: "Weak comparison == — use ===", lang: "js" },
+-  { regex: /\/\/\s*(TODO|FIXME)/i,                 id: "todo-inline",  msg: "Technical debt inline — resolve or create issue" },
+-  { regex: /\beval\s*\(/,                          id: "eval",         msg: "eval prohibited — injection risk" },
+-  // Python-specific patterns
+-  { regex: /except\s*:\s*pass/,                    id: "empty-except",  msg: "Empty except — handle the exception or log it", lang: "py" },
+-  { regex: /except\s+Exception\s*:\s*pass/,        id: "broad-except",  msg: "Broad exception swallowed — handle specific error", lang: "py" },
+-  { regex: /\bprint\s*\(/,                         id: "print-debug",   msg: "print() for debug — use logging module or debugger", lang: "py" },
+-  { regex: /#\s*(TODO|FIXME)/i,                    id: "todo-py",       msg: "Technical debt inline — resolve or create issue", lang: "py" },
++  { regex: /\bany\b/,                              id: "any",            msg: "TypeScript any — infer or define the real type", lang: "ts", severity: "blocker" },
++  { regex: /catch\s*\([^)]*\)\s*\{\s*\}/,     id: "empty-catch",    msg: "Empty catch — handle, rethrow, or log with context", severity: "blocker" },
++  { regex: /catch\s*\{\s*\}/,                    id: "empty-catch",    msg: "Empty catch — handle, rethrow, or log with context", severity: "blocker" },
++  { regex: /console\.log\((?!\s*\{)/,            id: "console-log",    msg: "Blind console.log — prefer structured log or debugger", lang: "js", severity: "warning" },
++  { regex: /function\s+\w+[^{]{200,}/,            id: "god-function",   msg: "Large function signature/body hint — split responsibilities", severity: "warning" },
++  { regex: /if.*if.*if.*if/,                       id: "arrow-code",     msg: "Deep conditional nesting — use early returns or guard clauses", severity: "warning" },
++  { regex: /innerHTML\s*=/,                        id: "innerhtml",      msg: "Unsafe innerHTML — use textContent, template sanitization, or DOM APIs", severity: "blocker" },
++  { regex: /\bvar\s+/,                             id: "var",            msg: "var detected — prefer const/let", lang: "js", severity: "advisory" },
++  { regex: /[^=!]==[^=]/,                          id: "weak-eq",        msg: "Weak comparison == — use === unless coercion is deliberate", lang: "js", severity: "warning" },
++  { regex: /\/\/\s*(TODO|FIXME)/i,                 id: "todo-inline",    msg: "Inline TODO/FIXME — resolve now or track externally", severity: "advisory" },
++  { regex: /\beval\s*\(/,                          id: "eval",           msg: "eval prohibited — injection and integrity risk", severity: "blocker" },
++  { regex: /except\s*:\s*pass/,                    id: "empty-except",   msg: "Empty except — handle the exception or rethrow", lang: "py", severity: "blocker" },
++  { regex: /except\s+Exception\s*:\s*pass/,        id: "broad-except",   msg: "Broad exception swallowed — catch specific error", lang: "py", severity: "blocker" },
++  { regex: /\bprint\s*\(/,                         id: "print-debug",    msg: "print() debug left in code — prefer logging or debugger", lang: "py", severity: "advisory" },
++  { regex: /#\s*(TODO|FIXME)/i,                    id: "todo-py",         msg: "Inline TODO/FIXME — resolve now or track externally", lang: "py", severity: "advisory" },
++];
++
++const RESPONSE_STYLE_PATTERNS = [
++  { regex: /\b(humm+|hmm+|uh+|umm+)\b/i, id: "hesitation", msg: "Hesitation token detected", severity: "blocker" },
++  { regex: /\b(let me think|let me see|i'?ll analyze|i will analyze|vou analisar|deixa eu pensar|deixa eu ver)\b/i, id: "process-commentary", msg: "Process commentary detected", severity: "blocker" },
++  { regex: /\b(got it|understood|alright|okay then|sure|claro|certo|entendido|perfeito)\b/i, id: "warmup", msg: "Warm-up filler detected", severity: "warning" },
++  { regex: /\b(of course|absolutely|happy to help|com certeza|sem problemas)\b/i, id: "courtesy", msg: "Courtesy filler detected", severity: "warning" },
++  { regex: /\b(here(?:'s| is) the code|here(?:'s| is) the updated code|aqui está|segue abaixo)\b/i, id: "preamble", msg: "Preamble before answer detected", severity: "warning" },
++  { regex: /\b(the next step is|agora vou|vou criar|vou fazer|o próximo passo é)\b/i, id: "narration", msg: "Narration about process detected", severity: "warning" },
+ ];
+ 
+ export {
+   ROOT_DIR,
++  PROJECT_ROOT,
+   RULES_DIR,
+   SRC_DIR,
+   SKILLS_DIR,
+   COMMANDS_DIR,
+   MEMORY_FILE,
+   PROJECT_STATE_FILE,
++  STATE_LIMITS,
+   TOPIC_MAP,
+   RULE_DESCRIPTIONS,
+   BAD_PATTERNS,
++  RESPONSE_STYLE_PATTERNS,
+ };
+diff --git a/src/memory.js b/src/memory.js
+index 7a3cb63..dd456e7 100644
+--- a/src/memory.js
++++ b/src/memory.js
+@@ -1,65 +1,83 @@
+ /**
+  * Stack Perfeita MCP — Memory tools
+- * save_observation, search_observations MCP tool registrations.
+- * Uses JSON file for persistence (no SQLite dependency).
++ * save_observation, search_observations.
++ * Uses JSON file persistence with simple dedupe + trimming.
+  */
+ 
+ import { z } from "zod";
+ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+-import { resolve } from "path";
+-import { MEMORY_FILE } from "./config.js";
++import { dirname, resolve } from "path";
++import { MEMORY_FILE, STATE_LIMITS } from "./config.js";
+ 
+-function loadMemory() {
+-  if (!existsSync(MEMORY_FILE)) return [];
++function normalizeMemory(data) {
++  if (!Array.isArray(data)) return [];
++  const unique = [];
++  const seen = new Set();
++
++  for (const item of data) {
++    const text = String(item?.text || "").trim();
++    if (!text || seen.has(text.toLowerCase())) continue;
++    seen.add(text.toLowerCase());
++    unique.push({
++      timestamp: item?.timestamp || new Date().toISOString(),
++      text,
++    });
++  }
++
++  return unique.slice(-STATE_LIMITS.maxObservations);
++}
++
++function loadMemory(filePath = MEMORY_FILE) {
++  if (!existsSync(filePath)) return [];
+   try {
+-    return JSON.parse(readFileSync(MEMORY_FILE, "utf-8"));
++    return normalizeMemory(JSON.parse(readFileSync(filePath, "utf-8")));
+   } catch {
+     return [];
+   }
+ }
+ 
+-function saveMemory(data) {
++function saveMemory(data, filePath = MEMORY_FILE) {
+   try {
+-    const claudeDir = resolve(process.cwd(), ".claude");
+-    if (!existsSync(claudeDir)) {
+-      mkdirSync(claudeDir, { recursive: true });
++    const dir = dirname(resolve(filePath));
++    if (!existsSync(dir)) {
++      mkdirSync(dir, { recursive: true });
+     }
+-    writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2), "utf-8");
++    writeFileSync(filePath, JSON.stringify(normalizeMemory(data), null, 2), "utf-8");
+   } catch (e) {
+     process.stderr.write(`Failed to save memory: ${e.message}\n`);
+   }
+ }
+ 
+ export function registerMemoryTools(server) {
+-  // Tool: save_observation
+   server.tool(
+     "save_observation",
+-    "Saves an observation, learning, or architectural decision to the session memory. This persists across sessions.",
+-    { observation: z.string().describe("The text of the observation to save.") },
++    "Saves an observation, learning, or architectural decision to persistent session memory. Duplicate entries are deduped.",
++    { observation: z.string().describe("Observation text to save.") },
+     async ({ observation }) => {
+-      const mem = loadMemory();
+-      mem.push({ timestamp: new Date().toISOString(), text: observation });
+-      saveMemory(mem);
++      const memory = loadMemory();
++      memory.push({ timestamp: new Date().toISOString(), text: observation });
++      saveMemory(memory);
+       return {
+-        content: [{ type: "text", text: "Observation saved successfully to session memory." }],
++        content: [{ type: "text", text: "Observation saved to session memory." }],
+       };
+     }
+   );
+ 
+-  // Tool: search_observations
+   server.tool(
+     "search_observations",
+-    "Searches previously saved observations in the session memory using a keyword query.",
++    "Searches saved observations using a keyword query.",
+     { query: z.string().describe("Keyword to search for in memory.") },
+     async ({ query }) => {
+-      const mem = loadMemory();
+-      const results = mem.filter(o => o.text.toLowerCase().includes(query.toLowerCase()));
++      const memory = loadMemory();
++      const results = memory.filter((entry) => entry.text.toLowerCase().includes(query.toLowerCase()));
++
+       if (results.length === 0) {
+-        return { content: [{ type: "text", text: `No observations found matching: "${query}"` }] };
++        return { content: [{ type: "text", text: `No observations found matching: \"${query}\"` }] };
+       }
+-      const lines = results.map(o => `[${o.timestamp}] ${o.text}`);
++
++      const lines = results.map((entry) => `[${entry.timestamp}] ${entry.text}`);
+       return {
+-        content: [{ type: "text", text: `## Observations matching "${query}"\n\n${lines.join("\n")}` }],
++        content: [{ type: "text", text: `## Observations matching \"${query}\"\n\n${lines.join("\n")}` }],
+       };
+     }
+   );
+diff --git a/src/project-state.js b/src/project-state.js
+index 9c21381..4a6d03a 100644
+--- a/src/project-state.js
++++ b/src/project-state.js
+@@ -1,13 +1,12 @@
+ /**
+  * Stack Perfeita MCP — Project State tools
+- * get_project_state, save_project_state, checkpoint_task, resume_task
+- * Formal state management for long coding sessions: objective, decisions, risks, checkpoints.
++ * get_project_state, save_project_state, checkpoint_task, list_checkpoints, resume_task
+  */
+ 
+ import { z } from "zod";
+ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+-import { resolve } from "path";
+-import { PROJECT_STATE_FILE } from "./config.js";
++import { dirname, resolve } from "path";
++import { PROJECT_STATE_FILE, STATE_LIMITS } from "./config.js";
+ import { rateLimiter } from "./rate-limiter.js";
+ 
+ const VALID_SECTIONS = [
+@@ -21,6 +20,15 @@ const VALID_SECTIONS = [
+   "last_error",
+ ];
+ 
++const ARRAY_SECTIONS = new Set([
++  "constraints",
++  "decisions",
++  "files_changed",
++  "next_steps",
++  "open_questions",
++  "risks",
++]);
++
+ export function defaultState() {
+   return {
+     objective: "",
+@@ -37,25 +45,55 @@ export function defaultState() {
+   };
+ }
+ 
+-export function loadState() {
+-  if (!existsSync(PROJECT_STATE_FILE)) return defaultState();
++function sanitizeState(state) {
++  const safe = { ...defaultState(), ...state };
++
++  for (const section of ARRAY_SECTIONS) {
++    const values = Array.isArray(safe[section]) ? safe[section] : [];
++    const unique = [];
++    const seen = new Set();
++    for (const value of values) {
++      const normalized = String(value).trim();
++      if (!normalized || seen.has(normalized)) continue;
++      seen.add(normalized);
++      unique.push(normalized);
++    }
++    safe[section] = unique.slice(-STATE_LIMITS.maxArrayItems);
++  }
++
++  safe.checkpoints = Array.isArray(safe.checkpoints)
++    ? safe.checkpoints.slice(-STATE_LIMITS.maxCheckpoints)
++    : [];
++
++  safe.compaction_history = Array.isArray(safe.compaction_history)
++    ? safe.compaction_history.slice(-STATE_LIMITS.maxCompactionHistory)
++    : [];
++
++  safe.objective = String(safe.objective || "").trim();
++  safe.last_error = safe.last_error ? String(safe.last_error).trim() : null;
++  safe.updated_at = new Date().toISOString();
++
++  return safe;
++}
++
++export function loadState(filePath = PROJECT_STATE_FILE) {
++  if (!existsSync(filePath)) return defaultState();
+   try {
+-    const data = JSON.parse(readFileSync(PROJECT_STATE_FILE, "utf-8"));
+-    // Merge with defaults to ensure all sections exist
+-    return { ...defaultState(), ...data };
++    const data = JSON.parse(readFileSync(filePath, "utf-8"));
++    return sanitizeState(data);
+   } catch {
+     return defaultState();
+   }
+ }
+ 
+-export function saveState(state) {
++export function saveState(state, filePath = PROJECT_STATE_FILE) {
+   try {
+-    const claudeDir = resolve(process.cwd(), ".claude");
+-    if (!existsSync(claudeDir)) {
+-      mkdirSync(claudeDir, { recursive: true });
++    const targetDir = dirname(resolve(filePath));
++    if (!existsSync(targetDir)) {
++      mkdirSync(targetDir, { recursive: true });
+     }
+-    state.updated_at = new Date().toISOString();
+-    writeFileSync(PROJECT_STATE_FILE, JSON.stringify(state, null, 2), "utf-8");
++    const sanitized = sanitizeState(state);
++    writeFileSync(filePath, JSON.stringify(sanitized, null, 2), "utf-8");
+   } catch (e) {
+     process.stderr.write(`Failed to save project state: ${e.message}\n`);
+   }
+@@ -68,7 +106,7 @@ function formatState(state, section) {
+     if (Array.isArray(value)) {
+       return value.length === 0
+         ? `## ${section}\n\n(empty)`
+-        : `## ${section}\n\n${value.map((v, i) => `${i + 1}. ${v}`).join("\n")}`;
++        : `## ${section}\n\n${value.map((entry, index) => `${index + 1}. ${entry}`).join("\n")}`;
+     }
+     return `## ${section}\n\n${value ?? "(empty)"}`;
+   }
+@@ -77,37 +115,44 @@ function formatState(state, section) {
+ 
+   for (const key of VALID_SECTIONS) {
+     const value = state[key];
++    lines.push(`### ${key}`);
+     if (Array.isArray(value)) {
+-      lines.push(`### ${key}`);
+-      if (value.length === 0) {
+-        lines.push("(empty)");
+-      } else {
+-        value.forEach((v, i) => lines.push(`${i + 1}. ${v}`));
+-      }
++      if (value.length === 0) lines.push("(empty)");
++      else value.forEach((entry, index) => lines.push(`${index + 1}. ${entry}`));
+     } else {
+-      lines.push(`### ${key}`);
+       lines.push(value ?? "(empty)");
+     }
+     lines.push("");
+   }
+ 
+-  const cpCount = state.checkpoints?.length ?? 0;
+-  lines.push(`### checkpoints`);
+-  lines.push(`${cpCount} checkpoint(s) saved`);
++  lines.push("### checkpoints", `${state.checkpoints?.length ?? 0} checkpoint(s) saved`, "");
++  lines.push("### compaction_history", `${state.compaction_history?.length ?? 0} compacted summary(ies) saved`);
+ 
+   return lines.join("\n");
+ }
+ 
++function formatCheckpointList(checkpoints) {
++  if (!checkpoints || checkpoints.length === 0) {
++    return "No checkpoints found. Use checkpoint_task(label) to create one first.";
++  }
++
++  const lines = checkpoints
++    .slice()
++    .reverse()
++    .map((checkpoint, index) => {
++      const objective = checkpoint.snapshot?.objective || "(no objective)";
++      return `${index + 1}. ${checkpoint.label} — ${checkpoint.timestamp}\n   objective: ${objective}`;
++    });
++
++  return `## Checkpoints (${checkpoints.length})\n\n${lines.join("\n")}`;
++}
++
+ export function registerProjectStateTools(server) {
+-  // Tool: get_project_state
+   server.tool(
+     "get_project_state",
+-    "Returns the current project state (objective, decisions, risks, next_steps, etc.) or a specific section. Use this to understand where the project stands before making changes.",
++    "Returns the current project state or one specific section. Use before resuming work or making risky changes.",
+     {
+-      section: z
+-        .enum(VALID_SECTIONS)
+-        .optional()
+-        .describe("Specific section to retrieve. Omit for full state."),
++      section: z.enum(VALID_SECTIONS).optional().describe("Specific section to retrieve. Omit for the full state."),
+     },
+     async ({ section }) => {
+       const rateLimitHit = rateLimiter.check("get_project_state");
+@@ -122,17 +167,12 @@ export function registerProjectStateTools(server) {
+     }
+   );
+ 
+-  // Tool: save_project_state
+   server.tool(
+     "save_project_state",
+-    "Updates a specific section of the project state. Use after significant decisions, file changes, or when risks/questions arise. Arrays are appended to (not replaced).",
++    "Updates one section of the project state. Array sections are appended with dedupe; scalar sections are replaced.",
+     {
+       section: z.enum(VALID_SECTIONS).describe("Which section to update."),
+-      content: z
+-        .string()
+-        .describe(
+-          "Content to save. For array sections (decisions, risks, etc.), this is appended. For scalar sections (objective, last_error), this replaces."
+-        ),
++      content: z.string().describe("Content to save for that section."),
+     },
+     async ({ section, content }) => {
+       const rateLimitHit = rateLimiter.check("save_project_state");
+@@ -141,43 +181,28 @@ export function registerProjectStateTools(server) {
+       }
+ 
+       const state = loadState();
+-
+-      const arraySections = [
+-        "constraints",
+-        "decisions",
+-        "files_changed",
+-        "next_steps",
+-        "open_questions",
+-        "risks",
+-      ];
+-
+-      if (arraySections.includes(section)) {
+-        state[section].push(content);
++      if (ARRAY_SECTIONS.has(section)) {
++        state[section] = [...state[section], content];
+       } else {
+         state[section] = content;
+       }
+-
+       saveState(state);
+ 
++      const fresh = loadState();
+       return {
+-        content: [
+-          {
+-            type: "text",
+-            text: `Project state updated: ${section}.\n\n${formatState(state, section)}`,
+-          },
+-        ],
++        content: [{
++          type: "text",
++          text: `Project state updated: ${section}.\n\n${formatState(fresh, section)}`,
++        }],
+       };
+     }
+   );
+ 
+-  // Tool: checkpoint_task
+   server.tool(
+     "checkpoint_task",
+-    "Creates a snapshot of the current project state with a label. Use before starting risky operations or at natural breakpoints to enable rollback via resume_task.",
++    "Creates a labeled snapshot of the current project state. Use before risky edits, refactors, or context resets.",
+     {
+-      label: z
+-        .string()
+-        .describe("Short label for this checkpoint (e.g., 'before-refactor', 'auth-done')."),
++      label: z.string().describe("Short checkpoint label, e.g. 'before-refactor' or 'auth-done'."),
+     },
+     async ({ label }) => {
+       const rateLimitHit = rateLimiter.check("checkpoint_task");
+@@ -186,41 +211,48 @@ export function registerProjectStateTools(server) {
+       }
+ 
+       const state = loadState();
+-
+-      // Snapshot = state without checkpoints, deep-cloned to avoid shared references
+-      const { checkpoints: _cp, ...rest } = state;
++      const { checkpoints: _ignored, ...rest } = state;
+       const snapshot = JSON.parse(JSON.stringify(rest));
+ 
+-      const checkpoint = {
++      state.checkpoints = state.checkpoints || [];
++      state.checkpoints.push({
+         label,
+         timestamp: new Date().toISOString(),
+         snapshot,
++      });
++      saveState(state);
++
++      return {
++        content: [{
++          type: "text",
++          text: `Checkpoint saved: \"${label}\".\n\n${formatCheckpointList(loadState().checkpoints)}`,
++        }],
+       };
++    }
++  );
+ 
+-      state.checkpoints = state.checkpoints || [];
+-      state.checkpoints.push(checkpoint);
+-      saveState(state);
++  server.tool(
++    "list_checkpoints",
++    "Lists saved checkpoints in reverse chronological order with labels, timestamps, and snapshot objectives.",
++    {},
++    async () => {
++      const rateLimitHit = rateLimiter.check("list_checkpoints");
++      if (rateLimitHit) {
++        return { content: [{ type: "text", text: rateLimitHit }] };
++      }
+ 
++      const state = loadState();
+       return {
+-        content: [
+-          {
+-            type: "text",
+-            text: `Checkpoint saved: "${label}" (${state.checkpoints.length} total).\n\nUse resume_task(label="${label}") to restore this state.`,
+-          },
+-        ],
++        content: [{ type: "text", text: formatCheckpointList(state.checkpoints) }],
+       };
+     }
+   );
+ 
+-  // Tool: resume_task
+   server.tool(
+     "resume_task",
+-    "Restores project state from a checkpoint. If label is provided, restores that specific checkpoint. If omitted, restores the most recent checkpoint. Use when resuming a session or after a failed operation.",
++    "Restores project state from a checkpoint. If label is omitted, restores the most recent checkpoint.",
+     {
+-      label: z
+-        .string()
+-        .optional()
+-        .describe("Checkpoint label to restore. Omit for most recent."),
++      label: z.string().optional().describe("Checkpoint label to restore. Omit for most recent."),
+     },
+     async ({ label }) => {
+       const rateLimitHit = rateLimiter.check("resume_task");
+@@ -230,48 +262,33 @@ export function registerProjectStateTools(server) {
+ 
+       const state = loadState();
+       const checkpoints = state.checkpoints || [];
+-
+       if (checkpoints.length === 0) {
+         return {
+-          content: [
+-            {
+-              type: "text",
+-              text: "No checkpoints found. Use checkpoint_task(label) to create one first.",
+-            },
+-          ],
++          content: [{ type: "text", text: "No checkpoints found. Use checkpoint_task(label) to create one first." }],
+         };
+       }
+ 
+-      let checkpoint;
+-      if (label) {
+-        checkpoint = checkpoints.find((cp) => cp.label === label);
+-        if (!checkpoint) {
+-          const available = checkpoints.map((cp) => `- ${cp.label} (${cp.timestamp})`).join("\n");
+-          return {
+-            content: [
+-              {
+-                type: "text",
+-                text: `Checkpoint "${label}" not found.\n\nAvailable checkpoints:\n${available}`,
+-              },
+-            ],
+-          };
+-        }
+-      } else {
+-        checkpoint = checkpoints[checkpoints.length - 1];
++      const checkpoint = label
++        ? checkpoints.find((entry) => entry.label === label)
++        : checkpoints[checkpoints.length - 1];
++
++      if (!checkpoint) {
++        return {
++          content: [{ type: "text", text: `Checkpoint \"${label}\" not found.\n\n${formatCheckpointList(checkpoints)}` }],
++        };
+       }
+ 
+-      // Restore snapshot into current state, keep checkpoints history
+       const restored = { ...defaultState(), ...checkpoint.snapshot, checkpoints };
+       saveState(restored);
+ 
+       return {
+-        content: [
+-          {
+-            type: "text",
+-            text: `Resumed from checkpoint: "${checkpoint.label}" (${checkpoint.timestamp}).\n\n${formatState(restored)}`,
+-          },
+-        ],
++        content: [{
++          type: "text",
++          text: `Resumed from checkpoint: \"${checkpoint.label}\" (${checkpoint.timestamp}).\n\n${formatState(loadState())}`,
++        }],
+       };
+     }
+   );
+ }
++
++export { VALID_SECTIONS };
+diff --git a/src/validators.js b/src/validators.js
+index efefc2c..4b8c6e0 100644
+--- a/src/validators.js
++++ b/src/validators.js
+@@ -1,17 +1,16 @@
+ /**
+  * Stack Perfeita MCP — Validator tools
+- * validate_bad_code (regex + AST + risk score), validate_git_commit, dependency_validate (robust)
++ * validate_bad_code, validate_response_style, validate_git_commit, dependency_validate.
+  */
+ 
+ import { z } from "zod";
+-import { existsSync, readdirSync } from "fs";
+-import { resolve, dirname, join, basename } from "path";
+-import { BAD_PATTERNS } from "./config.js";
++import { existsSync } from "fs";
++import { resolve, dirname, join, basename, extname } from "path";
++import { BAD_PATTERNS, RESPONSE_STYLE_PATTERNS } from "./config.js";
+ import { readFile } from "./helpers.js";
+ import { rateLimiter } from "./rate-limiter.js";
+ import { analyzeCodeMetrics } from "./code-reading.js";
+ 
+-// ─── Node.js built-in modules ───────────────────────────────────────────────
+ const NODE_BUILTINS = new Set([
+   "assert", "async_hooks", "buffer", "child_process", "cluster", "console",
+   "constants", "crypto", "dgram", "diagnostics_channel", "dns", "domain",
+@@ -20,7 +19,6 @@ const NODE_BUILTINS = new Set([
+   "readline", "repl", "stream", "string_decoder", "sys", "timers",
+   "tls", "trace_events", "tty", "url", "util", "v8", "vm", "wasi",
+   "worker_threads", "zlib",
+-  // node: prefix variants
+   "node:assert", "node:buffer", "node:child_process", "node:crypto",
+   "node:dns", "node:events", "node:fs", "node:http", "node:https",
+   "node:net", "node:os", "node:path", "node:process", "node:stream",
+@@ -28,13 +26,6 @@ const NODE_BUILTINS = new Set([
+   "node:worker_threads", "node:zlib",
+ ]);
+ 
+-function getFileLang(filePath) {
+-  if (/\.(js|ts|jsx|tsx|mjs|cjs)$/.test(filePath)) return "js";
+-  if (/\.py$/.test(filePath)) return "py";
+-  return null;
+-}
+-
+-// ─── Risk scoring thresholds ────────────────────────────────────────────────
+ const THRESHOLDS = {
+   FUNC_SIZE_WARN: 50,
+   FUNC_SIZE_HALT: 100,
+@@ -49,162 +40,262 @@ const THRESHOLDS = {
+ const SCORE_PASS_MAX = 20;
+ const SCORE_WARN_MAX = 50;
+ 
++function inferCodeLang(code, filePath) {
++  const ext = (filePath ? extname(filePath).toLowerCase() : "");
++  if ([".ts", ".tsx"].includes(ext)) return "ts";
++  if ([".js", ".jsx", ".mjs", ".cjs"].includes(ext)) return "js";
++  if (ext === ".py") return "py";
++
++  if (/^\s*(from\s+\w+\s+import|import\s+\w+|def\s+\w+\(|class\s+\w+\s*[:(])/m.test(code)) return "py";
++  if (/\binterface\s+\w+|\btype\s+\w+\s*=|:\s*[A-Z][A-Za-z0-9_<>,\[\]\s|]+|as\s+const\b/.test(code)) return "ts";
++  return "js";
++}
++
++function severityScore(severity) {
++  if (severity === "blocker") return 20;
++  if (severity === "warning") return 8;
++  return 3;
++}
++
++function formatBucket(title, items) {
++  if (items.length === 0) return `- ${title}: none`;
++  return [`- ${title} (${items.length}):`, ...items.map((item) => `  - ${item}`)].join("\n");
++}
++
++export function analyzeResponseStyle(text, mode = "adaptive") {
++  const blockerHits = [];
++  const warningHits = [];
++  const advisoryHits = [];
++
++  for (const pattern of RESPONSE_STYLE_PATTERNS) {
++    if (pattern.regex.test(text)) {
++      const line = `[${pattern.id}] ${pattern.msg}`;
++      if (pattern.severity === "blocker") blockerHits.push(line);
++      else if (pattern.severity === "warning") warningHits.push(line);
++      else advisoryHits.push(line);
++    }
++  }
++
++  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
++  if (mode === "caveman" && wordCount > 120) {
++    warningHits.push(`[verbosity] ${wordCount} words — too verbose for Caveman Mode`);
++  } else if (mode === "adaptive" && wordCount > 220) {
++    advisoryHits.push(`[verbosity] ${wordCount} words — consider compaction or tighter summary`);
++  }
++
++  let verdict = "PASS";
++  if (blockerHits.length > 0) verdict = "HALT";
++  else if (warningHits.length > 0 || advisoryHits.length > 0) verdict = "WARN";
++
++  return {
++    verdict,
++    wordCount,
++    blockers: blockerHits,
++    warnings: warningHits,
++    advisories: advisoryHits,
++  };
++}
++
++function buildCodeValidationReport({ code, filePath }) {
++  const lang = inferCodeLang(code, filePath);
++  const blockers = [];
++  const warnings = [];
++  const advisories = [];
++  let score = 0;
++
++  for (const pattern of BAD_PATTERNS) {
++    if (pattern.lang && pattern.lang !== lang) continue;
++    if (!pattern.regex.test(code)) continue;
++
++    const line = `[${pattern.id}] ${pattern.msg}`;
++    score += severityScore(pattern.severity);
++
++    if (pattern.severity === "blocker") blockers.push(line);
++    else if (pattern.severity === "warning") warnings.push(line);
++    else advisories.push(line);
++  }
++
++  const lineCount = code.split("\n").length;
++  if (lineCount >= THRESHOLDS.FILE_SIZE_HALT) {
++    score += 10;
++    warnings.push(`[file-size] ${lineCount} lines — split file or isolate responsibilities`);
++  } else if (lineCount >= THRESHOLDS.FILE_SIZE_WARN) {
++    score += 5;
++    advisories.push(`[file-size] ${lineCount} lines — monitor growth`);
++  }
++
++  const metrics = analyzeCodeMetrics(code);
++  const largeFunctions = metrics.functions.filter((fn) => fn.lines >= THRESHOLDS.FUNC_SIZE_WARN);
++  for (const fn of largeFunctions) {
++    if (fn.lines >= THRESHOLDS.FUNC_SIZE_HALT) {
++      score += 10;
++      warnings.push(`[function-size] ${fn.name}: ${fn.lines} lines`);
++    } else {
++      score += 5;
++      advisories.push(`[function-size] ${fn.name}: ${fn.lines} lines`);
++    }
++  }
++
++  const complexFunctions = metrics.functions.filter((fn) => fn.complexity >= THRESHOLDS.COMPLEXITY_WARN);
++  for (const fn of complexFunctions) {
++    if (fn.complexity >= THRESHOLDS.COMPLEXITY_HALT) {
++      score += 15;
++      warnings.push(`[complexity] ${fn.name}: ${fn.complexity}`);
++    } else {
++      score += 5;
++      advisories.push(`[complexity] ${fn.name}: ${fn.complexity}`);
++    }
++  }
++
++  if (metrics.maxNesting >= THRESHOLDS.NESTING_HALT) {
++    score += 10;
++    warnings.push(`[nesting] ${metrics.maxNesting} levels`);
++  } else if (metrics.maxNesting >= THRESHOLDS.NESTING_WARN) {
++    score += 5;
++    advisories.push(`[nesting] ${metrics.maxNesting} levels`);
++  }
++
++  const isTypeScript = filePath ? /\.(ts|tsx)$/.test(filePath) : lang === "ts";
++  if (isTypeScript) {
++    const untypedFunctions = metrics.functions.filter(
++      (fn) => !fn.hasReturnType && fn.name !== "<arrow>" && fn.name !== "<anonymous>"
++    );
++    if (untypedFunctions.length > 0 && untypedFunctions.length <= 5) {
++      score += 3;
++      advisories.push(`[return-type] Missing explicit return type: ${untypedFunctions.map((fn) => fn.name).join(", ")}`);
++    }
++  }
++
++  if (filePath) {
++    const TEST_EXTS = [".js", ".ts", ".mjs", ".cjs"];
++    const base = basename(filePath).replace(/\.(js|ts|jsx|tsx|mjs|cjs)$/, "");
++    const testDirs = [
++      dirname(filePath),
++      join(dirname(filePath), "..", "test"),
++      join(dirname(filePath), "..", "tests"),
++      join(dirname(filePath), "..", "__tests__"),
++    ];
++    const hasTests = testDirs.some((dir) =>
++      TEST_EXTS.some((ext) => existsSync(join(dir, `${base}.test${ext}`)))
++    );
++    const hasExports = /export\s+(function|const|class|default)|module\.exports/.test(code);
++    if (hasExports && !hasTests) {
++      score += 5;
++      advisories.push(`[tests] No test file found for module "${base}"`);
++    }
++  }
++
++  score = Math.min(score, 100);
++
++  let verdict = "PASS";
++  if (blockers.length > 0) verdict = "HALT";
++  else if (score <= SCORE_PASS_MAX) verdict = "PASS";
++  else if (score <= SCORE_WARN_MAX) verdict = "WARN";
++  else verdict = "HALT";
++
++  return {
++    lang,
++    score,
++    verdict,
++    blockers,
++    warnings,
++    advisories,
++    metrics,
++    lineCount,
++  };
++}
++
+ export function registerValidatorsTools(server) {
+-  // Tool: validate_bad_code
+   server.tool(
+     "validate_bad_code",
+-    "Checks code against bad patterns (regex + AST analysis). Returns risk score 0-100 with PASS/WARN/HALT verdict. Regex: any, console.log, eval, var, innerHTML, etc. AST: function size, cyclomatic complexity, nesting depth. Use BEFORE submitting code.",
+-    { code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python)."),
+-      file_path: z.string().optional().describe("Absolute path to the source file (enables missing test detection).") },
++    "Checks code against strong signals (blockers), structural warnings, and style advisories. Uses regex + AST metrics. Returns risk score 0-100 with PASS/WARN/HALT. Best used before shipping code or claiming success.",
++    {
++      code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python)."),
++      file_path: z.string().optional().describe("Absolute path to the source file. Helps detect TypeScript and missing test files."),
++    },
+     async ({ code, file_path }) => {
+       const rateLimitHit = rateLimiter.check("validate_bad_code");
+       if (rateLimitHit) {
+         return { content: [{ type: "text", text: rateLimitHit }] };
+       }
+ 
+-      let score = 0;
+-      const findings = [];
+-
+-      // Phase 1: Regex patterns
+-      const regexHits = [];
+-      for (const pattern of BAD_PATTERNS) {
+-        if (pattern.regex.test(code)) {
+-          regexHits.push(`[${pattern.id}] ${pattern.msg}`);
+-          score += 15;
+-        }
+-      }
+-
+-      if (regexHits.length > 0) {
+-        findings.push(`- [HALT] Regex patterns (${regexHits.length} detected):`);
+-        regexHits.forEach(h => findings.push(`  - ${h}`));
+-      } else {
+-        findings.push("- [PASS] Regex patterns: 0 detected");
+-      }
+-
+-      // Phase 2: AST metrics (JS/TS only)
+-      const lineCount = code.split("\n").length;
+-
+-      // File size
+-      if (lineCount >= THRESHOLDS.FILE_SIZE_HALT) {
+-        score += 10;
+-        findings.push(`- [HALT] File size: ${lineCount} lines (limit ${THRESHOLDS.FILE_SIZE_HALT})`);
+-      } else if (lineCount >= THRESHOLDS.FILE_SIZE_WARN) {
+-        score += 5;
+-        findings.push(`- [WARN] File size: ${lineCount} lines (limit ${THRESHOLDS.FILE_SIZE_WARN})`);
+-      } else {
+-        findings.push(`- [INFO] File size: ${lineCount} lines (ok)`);
+-      }
+-
+-      // AST-based checks
+-      const metrics = analyzeCodeMetrics(code);
+-
+-      // Function size
+-      const largeFunctions = metrics.functions.filter(f => f.lines >= THRESHOLDS.FUNC_SIZE_WARN);
+-      if (largeFunctions.length > 0) {
+-        for (const fn of largeFunctions) {
+-          if (fn.lines >= THRESHOLDS.FUNC_SIZE_HALT) {
+-            score += 10;
+-            findings.push(`- [HALT] Function ${fn.name}: ${fn.lines} lines (limit ${THRESHOLDS.FUNC_SIZE_HALT})`);
+-          } else {
+-            score += 5;
+-            findings.push(`- [WARN] Function ${fn.name}: ${fn.lines} lines (limit ${THRESHOLDS.FUNC_SIZE_WARN})`);
+-          }
+-        }
+-      }
+-
+-      // Cyclomatic complexity
+-      const complexFunctions = metrics.functions.filter(f => f.complexity >= THRESHOLDS.COMPLEXITY_WARN);
+-      for (const fn of complexFunctions) {
+-        if (fn.complexity >= THRESHOLDS.COMPLEXITY_HALT) {
+-          score += 15;
+-          findings.push(`- [HALT] Cyclomatic complexity: ${fn.complexity} in ${fn.name} (limit ${THRESHOLDS.COMPLEXITY_HALT})`);
+-        } else {
+-          score += 5;
+-          findings.push(`- [WARN] Cyclomatic complexity: ${fn.complexity} in ${fn.name} (limit ${THRESHOLDS.COMPLEXITY_WARN})`);
+-        }
++      const report = buildCodeValidationReport({ code, filePath: file_path });
++      const sections = [
++        `RISK SCORE: ${report.score}/100 (${report.verdict})`,
++        `- Language guess: ${report.lang}`,
++        `- Lines: ${report.lineCount}`,
++        formatBucket("BLOCKERS", report.blockers),
++        formatBucket("WARNINGS", report.warnings),
++        formatBucket("ADVISORIES", report.advisories),
++      ];
++
++      if (report.verdict === "HALT") {
++        sections.push("", "Fix blockers first. If blockers are empty, reduce warnings before proceeding.");
++      } else if (report.verdict === "WARN") {
++        sections.push("", "Warnings do not block by themselves, but they should be reviewed before merge.");
+       }
+ 
+-      // Nesting depth
+-      if (metrics.maxNesting >= THRESHOLDS.NESTING_HALT) {
+-        score += 10;
+-        findings.push(`- [HALT] Nesting depth: ${metrics.maxNesting} levels (limit ${THRESHOLDS.NESTING_HALT})`);
+-      } else if (metrics.maxNesting >= THRESHOLDS.NESTING_WARN) {
+-        score += 5;
+-        findings.push(`- [WARN] Nesting depth: ${metrics.maxNesting} levels (limit ${THRESHOLDS.NESTING_WARN})`);
+-      }
++      return {
++        content: [{ type: "text", text: sections.join("\n") }],
++      };
++    }
++  );
+ 
+-      // Typedness: missing return type annotations (TS advisory)
+-      const untypedFunctions = metrics.functions.filter(f => !f.hasReturnType && f.name !== "<arrow>" && f.name !== "<anonymous>");
+-      if (untypedFunctions.length > 0 && untypedFunctions.length <= 5) {
+-        score += 3;
+-        findings.push(`- [WARN] Missing return type: ${untypedFunctions.map(f => f.name).join(", ")}`);
++  server.tool(
++    "validate_response_style",
++    "Checks whether a natural-language response contains excitation tokens, hesitation filler, or overly verbose prose. Use before long explanatory answers. Mode 'caveman' enforces a tighter verbosity budget.",
++    {
++      text: z.string().describe("Draft response text to validate."),
++      mode: z.enum(["adaptive", "caveman"]).default("adaptive").describe("adaptive = concise but normal. caveman = ultra-compact output mode."),
++    },
++    async ({ text, mode }) => {
++      const rateLimitHit = rateLimiter.check("validate_response_style");
++      if (rateLimitHit) {
++        return { content: [{ type: "text", text: rateLimitHit }] };
+       }
+ 
+-      // Missing test detection (only when file_path is provided)
+-      if (file_path) {
+-        const TEST_EXTS = [".js", ".ts", ".mjs", ".cjs"];
+-        const base = basename(file_path).replace(/\.(js|ts|jsx|tsx|mjs|cjs)$/, "");
+-        const testDirs = [
+-          dirname(file_path),
+-          join(dirname(file_path), "..", "test"),
+-          join(dirname(file_path), "..", "tests"),
+-          join(dirname(file_path), "..", "__tests__"),
+-        ];
+-        const hasTests = testDirs.some(dir =>
+-          TEST_EXTS.some(ext => existsSync(join(dir, `${base}.test${ext}`)))
+-        );
+-        const hasExports = /export\s+(function|const|class|default)|module\.exports/.test(code);
+-        if (hasExports && !hasTests) {
+-          score += 5;
+-          findings.push(`- [WARN] No test file found for module "${base}" (searched test/, tests/, __tests__/)`);
+-        } else {
+-          findings.push(`- [INFO] Test coverage: ${hasTests ? "test file found" : "no exports to test"}`);
+-        }
++      const report = analyzeResponseStyle(text, mode);
++      const body = [
++        `STYLE CHECK: ${report.verdict}`,
++        `- Mode: ${mode}`,
++        `- Word count: ${report.wordCount}`,
++        formatBucket("BLOCKERS", report.blockers),
++        formatBucket("WARNINGS", report.warnings),
++        formatBucket("ADVISORIES", report.advisories),
++      ];
++
++      if (report.verdict === "HALT") {
++        body.push("", "Remove filler/process narration before sending this answer.");
+       }
+ 
+-      // Cap score at 100
+-      score = Math.min(score, 100);
+-
+-      // Verdict
+-      let verdict;
+-      if (score <= SCORE_PASS_MAX) verdict = "PASS";
+-      else if (score <= SCORE_WARN_MAX) verdict = "WARN";
+-      else verdict = "HALT";
+-
+-      const header = `RISK SCORE: ${score}/100 (${verdict})`;
+-      const body = findings.join("\n");
+-      const footer = verdict === "HALT" ? "\n\nFix HALT items before proceeding." : verdict === "WARN" ? "\n\nWARN items are advisory. Fix if possible." : "";
+-
+       return {
+-        content: [{ type: "text", text: `${header}\n${body}${footer}` }],
++        content: [{ type: "text", text: body.join("\n") }],
+       };
+     }
+   );
+ 
+-  // Tool: validate_git_commit
+   server.tool(
+     "validate_git_commit",
+-    "Validates commit message against Conventional Commits format (feat/fix/docs/style/refactor/perf/test/chore). Use ALWAYS before creating a commit.",
++    "Validates commit message against Conventional Commits format (feat/fix/docs/style/refactor/perf/test/chore). Use before creating a commit.",
+     { message: z.string().describe("Commit message to validate.") },
+     async ({ message }) => {
+       const commitRegex = /^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]+\))?:\s.+/;
+ 
+       if (commitRegex.test(message)) {
+         return {
+-          content: [{ type: "text", text: "PASS — Valid Conventional Commits format. Proceed with commit." }],
++          content: [{ type: "text", text: "PASS — Valid Conventional Commits format." }],
+         };
+       }
+ 
+       return {
+-        content: [{ type: "text", text: "HALT — Invalid format. Must be: type(scope): description\nValid types: feat, fix, docs, style, refactor, perf, test, chore" }],
++        content: [{ type: "text", text: "HALT — Invalid format. Must be: type(scope): description. Valid types: feat, fix, docs, style, refactor, perf, test, chore." }],
+       };
+     }
+   );
+ 
+-  // Tool: dependency_validate
+   server.tool(
+     "dependency_validate",
+-    "Checks if import/require references exist on disk. Handles relative imports (./x, ../x), bare imports (lodash, express), Node built-ins, @/ aliases (tsconfig paths), and ~/ aliases. Detects hallucinated imports.",
++    "Fast-path validator for imports and asset references. Checks relative imports, node_modules, Node built-ins, common tsconfig aliases, and local HTML assets. Use to catch hallucinated references before claiming a module exists.",
+     { file_path: z.string().describe("Absolute path to the file to validate dependencies for.") },
+     async ({ file_path }) => {
+       const rateLimitHit = rateLimiter.check("dependency_validate");
+@@ -223,10 +314,8 @@ export function registerValidatorsTools(server) {
+       }
+ 
+       const fileDir = dirname(absPath);
+-      const missing = [];
+-      const skipped = [];
++      const missing = new Set();
+ 
+-      // Find project root (walk up to find package.json)
+       let projectRoot = fileDir;
+       for (let i = 0; i < 10; i++) {
+         if (existsSync(join(projectRoot, "package.json"))) break;
+@@ -235,7 +324,6 @@ export function registerValidatorsTools(server) {
+         projectRoot = parent;
+       }
+ 
+-      // Load tsconfig paths if available
+       const tsconfigPaths = {};
+       const tsconfigPath = join(projectRoot, "tsconfig.json");
+       if (existsSync(tsconfigPath)) {
+@@ -244,125 +332,106 @@ export function registerValidatorsTools(server) {
+           const paths = tsconfig?.compilerOptions?.paths || {};
+           for (const [alias, targets] of Object.entries(paths)) {
+             const cleanAlias = alias.replace("/*", "");
+-            const target = Array.isArray(targets) ? targets[0].replace("/*", "") : targets.replace("/*", "");
++            const firstTarget = Array.isArray(targets) ? targets[0] : targets;
++            const target = String(firstTarget).replace("/*", "");
+             tsconfigPaths[cleanAlias] = resolve(projectRoot, tsconfig?.compilerOptions?.baseUrl || ".", target);
+           }
+-        } catch { /* ignore parse errors */ }
++        } catch {
++          // ignore malformed tsconfig
++        }
+       }
+ 
+       const EXTENSIONS = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".json"];
+ 
++      function candidateExists(basePath) {
++        const candidates = [basePath];
++        for (const ext of EXTENSIONS) candidates.push(basePath + ext);
++        candidates.push(join(basePath, "index.js"), join(basePath, "index.ts"), join(basePath, "index.tsx"));
++        return candidates.some((candidate) => existsSync(candidate));
++      }
++
+       function resolveImport(importPath) {
+-        // 1. Relative imports
+         if (importPath.startsWith(".")) {
+-          const candidates = [resolve(fileDir, importPath)];
+-          for (const ext of EXTENSIONS) {
+-            candidates.push(resolve(fileDir, importPath + ext));
+-          }
+-          candidates.push(resolve(fileDir, importPath, "index.js"));
+-          candidates.push(resolve(fileDir, importPath, "index.ts"));
+-          return candidates.some(c => existsSync(c));
++          return candidateExists(resolve(fileDir, importPath));
+         }
+ 
+-        // 2. Node built-ins
+         if (NODE_BUILTINS.has(importPath) || NODE_BUILTINS.has(importPath.split("/")[0])) {
+           return true;
+         }
+ 
+-        // 3. tsconfig @/ aliases
+         for (const [alias, targetDir] of Object.entries(tsconfigPaths)) {
+-          if (importPath.startsWith(alias + "/") || importPath === alias) {
+-            const rest = importPath.slice(alias.length + 1);
+-            const resolved = rest ? resolve(targetDir, rest) : targetDir;
+-            const candidates = [resolved];
+-            for (const ext of EXTENSIONS) candidates.push(resolved + ext);
+-            if (candidates.some(c => existsSync(c))) return true;
++          if (importPath === alias || importPath.startsWith(alias + "/")) {
++            const rest = importPath === alias ? "" : importPath.slice(alias.length + 1);
++            return candidateExists(rest ? resolve(targetDir, rest) : targetDir);
+           }
+         }
+ 
+-        // 4. ~/ alias (common in some frameworks)
+         if (importPath.startsWith("~/")) {
+-          const resolved = resolve(projectRoot, importPath.slice(2));
+-          const candidates = [resolved];
+-          for (const ext of EXTENSIONS) candidates.push(resolved + ext);
+-          if (candidates.some(c => existsSync(c))) return true;
++          return candidateExists(resolve(projectRoot, importPath.slice(2)));
+         }
+ 
+-        // 5. Bare imports — check node_modules
+-        const pkgName = importPath.startsWith("@") ? importPath.split("/").slice(0, 2).join("/") : importPath.split("/")[0];
+-        const nodeModulesPath = join(projectRoot, "node_modules", pkgName);
+-        if (existsSync(nodeModulesPath)) return true;
+-
+-        return false;
++        const pkgName = importPath.startsWith("@")
++          ? importPath.split("/").slice(0, 2).join("/")
++          : importPath.split("/")[0];
++        return existsSync(join(projectRoot, "node_modules", pkgName));
+       }
+ 
+-      // JS/TS ES imports
+       const importRegex = /import\s+(?:[\w{},*\s]+\s+from\s+)?['"]([^'"]+)['"]/g;
+       let match;
+       while ((match = importRegex.exec(content)) !== null) {
+         const importPath = match[1];
+-        if (!resolveImport(importPath)) {
+-          missing.push(`import "${importPath}"`);
+-        }
++        if (!resolveImport(importPath)) missing.add(`import \"${importPath}\"`);
+       }
+ 
+-      // CommonJS require
+       const requireRegex = /require\(\s*['"]([^'"]+)['"]\s*\)/g;
+       while ((match = requireRegex.exec(content)) !== null) {
+-        const requirePath = match[1];
+-        if (!resolveImport(requirePath)) {
+-          missing.push(`require("${requirePath}")`);
+-        }
++        const importPath = match[1];
++        if (!resolveImport(importPath)) missing.add(`require(\"${importPath}\")`);
+       }
+ 
+-      // Dynamic import()
+       const dynamicImportRegex = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
+       while ((match = dynamicImportRegex.exec(content)) !== null) {
+         const importPath = match[1];
+-        if (!resolveImport(importPath)) {
+-          missing.push(`import("${importPath}")`);
+-        }
++        if (!resolveImport(importPath)) missing.add(`import(\"${importPath}\")`);
+       }
+ 
+-      // HTML: <script src="x"> and <link href="x">
+       const scriptRegex = /<script\s+[^>]*src=['"]([^'"]+)['"]/g;
+       while ((match = scriptRegex.exec(content)) !== null) {
+         const src = match[1];
+-        if (!src.startsWith("http") && !src.startsWith("//")) {
+-          const resolved = resolve(fileDir, src);
+-          if (!existsSync(resolved)) {
+-            missing.push(`<script src="${src}">`);
+-          }
++        if (!src.startsWith("http") && !src.startsWith("//") && !existsSync(resolve(fileDir, src))) {
++          missing.add(`<script src=\"${src}\">`);
+         }
+       }
+ 
+       const linkRegex = /<link\s+[^>]*href=['"]([^'"]+\.css)['"]/g;
+       while ((match = linkRegex.exec(content)) !== null) {
+         const href = match[1];
+-        if (!href.startsWith("http") && !href.startsWith("//")) {
+-          const resolved = resolve(fileDir, href);
+-          if (!existsSync(resolved)) {
+-            missing.push(`<link href="${href}">`);
+-          }
++        if (!href.startsWith("http") && !href.startsWith("//") && !existsSync(resolve(fileDir, href))) {
++          missing.add(`<link href=\"${href}\">`);
+         }
+       }
+ 
+-      if (missing.length > 0) {
++      if (missing.size > 0) {
+         return {
+           content: [{
+             type: "text",
+-            text: `HALT — ${missing.length} missing reference(s):\n\n${missing.map(m => `- ${m}`).join("\n")}\n\nPossible hallucinated import. Fix before proceeding.\n\nChecked: relative paths, node_modules, tsconfig paths (${Object.keys(tsconfigPaths).length} aliases), Node built-ins.`,
++            text: `HALT — ${missing.size} missing reference(s):\n\n${[...missing].map((item) => `- ${item}`).join("\n")}\n\nPossible hallucinated import/reference. Checked: relative paths, node_modules, tsconfig aliases (${Object.keys(tsconfigPaths).length}), Node built-ins, HTML assets.`,
+           }],
+         };
+       }
+ 
+-      const aliasInfo = Object.keys(tsconfigPaths).length > 0 ? ` (${Object.keys(tsconfigPaths).length} tsconfig aliases loaded)` : "";
++      const aliasInfo = Object.keys(tsconfigPaths).length > 0
++        ? ` (${Object.keys(tsconfigPaths).length} tsconfig aliases loaded)`
++        : "";
++
+       return {
+         content: [{
+           type: "text",
+-          text: `PASS — All imports and references resolve to existing files.${aliasInfo}\nChecked: relative, bare (node_modules), tsconfig paths, Node built-ins, HTML assets.`,
++          text: `PASS — All imports and local asset references resolved${aliasInfo}. Checked: relative paths, node_modules, tsconfig aliases, Node built-ins, HTML assets.`,
+         }],
+       };
+     }
+   );
+ }
++
++export { buildCodeValidationReport };
+diff --git a/test/validators.test.js b/test/validators.test.js
+index 3d21ba1..8f6c688 100644
+--- a/test/validators.test.js
++++ b/test/validators.test.js
+@@ -1,76 +1,75 @@
+ /**
+- * Test suite for src/config.js (BAD_PATTERNS)
+- * Tests: pattern detection, false positives, Python support
++ * Test suite for validator internals
+  */
+ 
+ import { describe, it } from 'node:test';
+ import assert from 'node:assert';
+ import { BAD_PATTERNS } from '../src/config.js';
++import { analyzeCodeMetrics } from '../src/code-reading.js';
++import { analyzeResponseStyle, buildCodeValidationReport } from '../src/validators.js';
+ 
+ describe('BAD_PATTERNS', () => {
+   it('should detect TypeScript any', () => {
+     const code = 'const data: any = fetchData()';
+-    const anyPattern = BAD_PATTERNS.find(p => p.id === 'any');
++    const anyPattern = BAD_PATTERNS.find((p) => p.id === 'any');
+     assert.ok(anyPattern.regex.test(code));
+   });
+ 
+   it('should detect empty catch blocks', () => {
+     const code1 = 'try { foo() } catch (e) {}';
+     const code2 = 'try { foo() } catch {}';
+-    const emptyCatchPatterns = BAD_PATTERNS.filter(p => p.id === 'empty-catch');
+-    assert.ok(emptyCatchPatterns.some(p => p.regex.test(code1)));
+-    assert.ok(emptyCatchPatterns.some(p => p.regex.test(code2)));
++    const emptyCatchPatterns = BAD_PATTERNS.filter((p) => p.id === 'empty-catch');
++    assert.ok(emptyCatchPatterns.some((p) => p.regex.test(code1)));
++    assert.ok(emptyCatchPatterns.some((p) => p.regex.test(code2)));
+   });
+ 
+   it('should detect blind console.log but allow structured logging', () => {
+     const blindLog = 'console.log("got here")';
+     const structuredLog = 'console.log({ msg: "error", userId, error: String(err) })';
+-    const consolePattern = BAD_PATTERNS.find(p => p.id === 'console-log');
++    const consolePattern = BAD_PATTERNS.find((p) => p.id === 'console-log');
+     assert.ok(consolePattern.regex.test(blindLog));
+     assert.ok(!consolePattern.regex.test(structuredLog));
+   });
+ 
+   it('should detect var usage', () => {
+     const code = 'var x = 10';
+-    const varPattern = BAD_PATTERNS.find(p => p.id === 'var');
++    const varPattern = BAD_PATTERNS.find((p) => p.id === 'var');
+     assert.ok(varPattern.regex.test(code));
+   });
+ 
+   it('should detect eval', () => {
+     const code = 'eval("dangerous code")';
+-    const evalPattern = BAD_PATTERNS.find(p => p.id === 'eval');
++    const evalPattern = BAD_PATTERNS.find((p) => p.id === 'eval');
+     assert.ok(evalPattern.regex.test(code));
+   });
+ 
+   it('should detect innerHTML', () => {
+     const code = 'element.innerHTML = userInput';
+-    const innerHTMLPattern = BAD_PATTERNS.find(p => p.id === 'innerhtml');
++    const innerHTMLPattern = BAD_PATTERNS.find((p) => p.id === 'innerhtml');
+     assert.ok(innerHTMLPattern.regex.test(code));
+   });
+ 
+   it('should detect inline TODO/FIXME', () => {
+     const code1 = '// TODO: fix this later';
+     const code2 = '// FIXME: broken logic';
+-    const todoPattern = BAD_PATTERNS.find(p => p.id === 'todo-inline');
++    const todoPattern = BAD_PATTERNS.find((p) => p.id === 'todo-inline');
+     assert.ok(todoPattern.regex.test(code1));
+     assert.ok(todoPattern.regex.test(code2));
+   });
+ 
+   it('should detect Python empty except', () => {
+     const code = 'try:\n    foo()\nexcept:\n    pass';
+-    const exceptPattern = BAD_PATTERNS.find(p => p.id === 'empty-except');
++    const exceptPattern = BAD_PATTERNS.find((p) => p.id === 'empty-except');
+     assert.ok(exceptPattern.regex.test(code));
+   });
+ 
+   it('should detect Python print debug', () => {
+     const code = 'print("debug value:", x)';
+-    const printPattern = BAD_PATTERNS.find(p => p.id === 'print-debug');
++    const printPattern = BAD_PATTERNS.find((p) => p.id === 'print-debug');
+     assert.ok(printPattern.regex.test(code));
+   });
+ });
+ 
+-import { analyzeCodeMetrics } from '../src/code-reading.js';
+-
+ describe('analyzeCodeMetrics (AST)', () => {
+   it('should count lines and functions', () => {
+     const code = `function foo() {
+@@ -127,8 +126,8 @@ function formatCurrency(amount) {
+   return '$' + amount.toFixed(2);
+ }`;
+     const metrics = analyzeCodeMetrics(code);
+-    const calcFn = metrics.functions.find(f => f.name === 'calculateTotal');
+-    const fmtFn = metrics.functions.find(f => f.name === 'formatCurrency');
++    const calcFn = metrics.functions.find((f) => f.name === 'calculateTotal');
++    const fmtFn = metrics.functions.find((f) => f.name === 'formatCurrency');
+     assert.ok(calcFn);
+     assert.strictEqual(calcFn.hasReturnType, false);
+     assert.ok(fmtFn);
+@@ -147,3 +146,42 @@ export const add = (a, b) => a + b;`;
+     }
+   });
+ });
++
++describe('buildCodeValidationReport', () => {
++  it('should HALT on blocker patterns', () => {
++    const report = buildCodeValidationReport({
++      code: 'const input: any = value',
++      filePath: '/tmp/example.ts',
++    });
++    assert.strictEqual(report.verdict, 'HALT');
++    assert.ok(report.blockers.some((item) => item.includes('[any]')));
++  });
++
++  it('should ignore Python-only patterns for JS files', () => {
++    const report = buildCodeValidationReport({
++      code: 'function demo() { return 1; }',
++      filePath: '/tmp/example.js',
++    });
++    assert.ok(!report.blockers.some((item) => item.includes('empty-except')));
++  });
++});
++
++describe('analyzeResponseStyle', () => {
++  it('should HALT on explicit hesitation/process filler', () => {
++    const report = analyzeResponseStyle('Humm, let me think. Vou analisar e já volto.', 'adaptive');
++    assert.strictEqual(report.verdict, 'HALT');
++    assert.ok(report.blockers.length >= 1);
++  });
++
++  it('should WARN on verbose caveman output', () => {
++    const longText = Array.from({ length: 130 }, () => 'token').join(' ');
++    const report = analyzeResponseStyle(longText, 'caveman');
++    assert.strictEqual(report.verdict, 'WARN');
++    assert.ok(report.warnings.some((item) => item.includes('verbosity')));
++  });
++
++  it('should PASS on direct compact response', () => {
++    const report = analyzeResponseStyle('Root cause found -> fix applied -> tests green.', 'caveman');
++    assert.strictEqual(report.verdict, 'PASS');
++  });
++});
