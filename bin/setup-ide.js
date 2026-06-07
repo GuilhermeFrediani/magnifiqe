@@ -2,48 +2,52 @@
 
 /**
  * stack-perfeita setup script
- * Generates IDE configuration files for Stack Perfeita MCP integration.
- * 
+ * Generates IDE configuration files and can bootstrap starter rules/skills.
+ *
  * Usage:
- *   stack-perfeita           # Generate all config files
- *   stack-perfeita --minimal # Only .cursorrules
- *   stack-perfeita --force   # Overwrite existing files without asking
+ *   stack-perfeita                 # Generate IDE config files only
+ *   stack-perfeita init            # Generate configs + starter ai-rules + starter skills
+ *   stack-perfeita --bootstrap     # Same as init
+ *   stack-perfeita --minimal       # Only .cursorrules
+ *   stack-perfeita --force         # Overwrite existing files
  */
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const PROJECT_DIR = process.cwd();
 const args = process.argv.slice(2);
+
 const FORCE = args.includes('--force');
 const MINIMAL = args.includes('--minimal');
+const BOOTSTRAP = args.includes('init') || args.includes('--bootstrap');
 
-// The Ignition Prompt embedded directly in IDE rules
 const IGNITION_PROMPT = `
-# STACK-PERFEITA MCP - CORE INSTRUCTIONS
+# STACK PERFEITA MCP — IGNITION
 
-You are operating under the "Stack-Perfeita" strict ruleset.
-You MUST use the connected MCP server for codebase validation.
+Use Stack Perfeita as runtime discipline for this project.
 
-## IGNITION SEQUENCE (DO THIS FIRST)
-Before answering the first user prompt in a new session:
-1. Call \`list_rules()\` to see available rules
-2. Call \`get_rules({ topic: "behavior", mode: "summary" })\`
-3. Call \`get_project_state()\` to check if there is existing project state
+## SESSION START
+1. Call \`activate_project()\`
+2. Call \`get_model_profile("claude")\` or the active provider
+3. Call \`get_rules_bundle("index")\`
+4. Call \`get_project_state()\`
 
-## ADAPTIVE TERSENESS
-- Be concise by default. Expand only when ambiguity, risk, or debugging requires it.
-- No conversational filler ("Humm", "Here is the code", "Understood").
-- RULE OF 2: If a command/test fails TWICE for the same reason, HALT. Do not try a 3rd time blindly.
-- Run \`validate_bad_code\` BEFORE outputting any code block.
-- Run \`dependency_validate\` AFTER suggesting new imports.
+## OPERATING MODE
+- Adaptive terseness by default
+- If token pressure is high: set \`CAVEMAN MODE: ACTIVE\`
+- Zero excitation tokens: no filler, no warm-up, no process narration
+- Rule of 2: same failure twice -> HALT and report root cause
 
-## OUTPUT-GATE
-Do not deliver a response without checking:
-- [ ] Requirements met?
-- [ ] validate_bad_code: PASS?
-- [ ] dependency_validate: PASS?
-- [ ] Concise and precise (no filler)?
+## OUTPUT GATE
+Before shipping code or claiming success:
+- Run \`validate_bad_code\` for code blocks
+- Run \`dependency_validate\` when new imports/assets were introduced
+- Run \`validate_response_style\` before long explanatory prose when needed
+- If foundation is rotten, stop feature work and fix the base first
 `;
 
 const OPENCODE_CONFIG = {
@@ -53,7 +57,8 @@ const OPENCODE_CONFIG = {
     "./ai-rules/01-ai-workflow-strict.md",
     "./ai-rules/03-token-economy.md",
     "./ai-rules/05-debugging-mastery.md",
-    "./ai-rules/10-llm-behavioral-rules.md"
+    "./ai-rules/10-llm-behavioral-rules.md",
+    "./ai-rules/11-systematic-debugging.md"
   ],
   "mcp": {
     "stack-perfeita": {
@@ -69,36 +74,59 @@ function writeFileSafe(filePath, content, description) {
     console.log(`[~] Skipped (already exists): ${filePath}`);
     return false;
   }
-  
+
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  
+
   fs.writeFileSync(filePath, content.trim() + '\n', 'utf8');
   console.log(`[+] Generated: ${description}`);
   return true;
 }
 
+function copyFileSafe(src, dest, description) {
+  if (fs.existsSync(dest) && !FORCE) {
+    return false;
+  }
+  const dir = path.dirname(dest);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.copyFileSync(src, dest);
+  if (description) console.log(`[+] Copied: ${description}`);
+  return true;
+}
+
+function copyDirSafe(srcDir, destDir, description) {
+  if (!fs.existsSync(srcDir)) return false;
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDirSafe(srcPath, destPath);
+    } else {
+      copyFileSafe(srcPath, destPath);
+    }
+  }
+
+  if (description) console.log(`[+] Bootstrapped: ${description}`);
+  return true;
+}
+
 console.log('Stack Perfeita MCP - IDE Setup\n');
 
-// Always generate .cursorrules
-writeFileSafe(
-  path.join(PROJECT_DIR, '.cursorrules'),
-  IGNITION_PROMPT,
-  '.cursorrules'
-);
+writeFileSafe(path.join(PROJECT_DIR, '.cursorrules'), IGNITION_PROMPT, '.cursorrules');
 
 if (!MINIMAL) {
-  // .windsurfrules
-  writeFileSafe(
-    path.join(PROJECT_DIR, '.windsurfrules'),
-    IGNITION_PROMPT,
-    '.windsurfrules'
-  );
+  writeFileSafe(path.join(PROJECT_DIR, '.windsurfrules'), IGNITION_PROMPT, '.windsurfrules');
 
-  // .github/copilot-instructions.md - ONLY if it doesn't exist
-  // (don't overwrite a rich, project-specific version with our generic one)
   const copilotPath = path.join(PROJECT_DIR, '.github', 'copilot-instructions.md');
   if (!fs.existsSync(copilotPath) || FORCE) {
     writeFileSafe(copilotPath, IGNITION_PROMPT, '.github/copilot-instructions.md');
@@ -106,7 +134,6 @@ if (!MINIMAL) {
     console.log(`[~] Skipped (project-specific version exists): ${copilotPath}`);
   }
 
-  // opencode.json
   writeFileSafe(
     path.join(PROJECT_DIR, 'opencode.json'),
     JSON.stringify(OPENCODE_CONFIG, null, 2),
@@ -114,7 +141,18 @@ if (!MINIMAL) {
   );
 }
 
-console.log('\nSetup complete! Your IDE is now configured to follow Stack Perfeita rules.');
-if (MINIMAL) {
-  console.log('(Minimal mode: only .cursorrules generated)');
+if (BOOTSTRAP) {
+  copyDirSafe(path.join(PACKAGE_ROOT, 'ai-rules'), path.join(PROJECT_DIR, 'ai-rules'), 'ai-rules/ starter pack');
+  copyDirSafe(path.join(PACKAGE_ROOT, '.claude', 'skills'), path.join(PROJECT_DIR, '.claude', 'skills'), '.claude/skills starter pack');
+} else if (!fs.existsSync(path.join(PROJECT_DIR, 'ai-rules'))) {
+  console.log('[!] ai-rules/ not found. Run `stack-perfeita init` to bootstrap starter rules.');
 }
+
+console.log('\nSetup complete.');
+if (MINIMAL) {
+  console.log('- Minimal mode: only .cursorrules generated');
+}
+if (BOOTSTRAP) {
+  console.log('- Bootstrap mode: starter ai-rules and skills copied');
+}
+console.log('- MCP server command for IDEs: npx stack-perfeita-mcp --rules-dir ./ai-rules');

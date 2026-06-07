@@ -1,65 +1,83 @@
 /**
  * Stack Perfeita MCP — Memory tools
- * save_observation, search_observations MCP tool registrations.
- * Uses JSON file for persistence (no SQLite dependency).
+ * save_observation, search_observations.
+ * Uses JSON file persistence with simple dedupe + trimming.
  */
 
 import { z } from "zod";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
-import { MEMORY_FILE } from "./config.js";
+import { dirname, resolve } from "path";
+import { MEMORY_FILE, STATE_LIMITS } from "./config.js";
 
-function loadMemory() {
-  if (!existsSync(MEMORY_FILE)) return [];
+function normalizeMemory(data) {
+  if (!Array.isArray(data)) return [];
+  const unique = [];
+  const seen = new Set();
+
+  for (const item of data) {
+    const text = String(item?.text || "").trim();
+    if (!text || seen.has(text.toLowerCase())) continue;
+    seen.add(text.toLowerCase());
+    unique.push({
+      timestamp: item?.timestamp || new Date().toISOString(),
+      text,
+    });
+  }
+
+  return unique.slice(-STATE_LIMITS.maxObservations);
+}
+
+function loadMemory(filePath = MEMORY_FILE) {
+  if (!existsSync(filePath)) return [];
   try {
-    return JSON.parse(readFileSync(MEMORY_FILE, "utf-8"));
+    return normalizeMemory(JSON.parse(readFileSync(filePath, "utf-8")));
   } catch {
     return [];
   }
 }
 
-function saveMemory(data) {
+function saveMemory(data, filePath = MEMORY_FILE) {
   try {
-    const claudeDir = resolve(process.cwd(), ".claude");
-    if (!existsSync(claudeDir)) {
-      mkdirSync(claudeDir, { recursive: true });
+    const dir = dirname(resolve(filePath));
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
     }
-    writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2), "utf-8");
+    writeFileSync(filePath, JSON.stringify(normalizeMemory(data), null, 2), "utf-8");
   } catch (e) {
     process.stderr.write(`Failed to save memory: ${e.message}\n`);
   }
 }
 
 export function registerMemoryTools(server) {
-  // Tool: save_observation
   server.tool(
     "save_observation",
-    "Saves an observation, learning, or architectural decision to the session memory. This persists across sessions.",
-    { observation: z.string().describe("The text of the observation to save.") },
+    "Saves an observation, learning, or architectural decision to persistent session memory. Duplicate entries are deduped.",
+    { observation: z.string().describe("Observation text to save.") },
     async ({ observation }) => {
-      const mem = loadMemory();
-      mem.push({ timestamp: new Date().toISOString(), text: observation });
-      saveMemory(mem);
+      const memory = loadMemory();
+      memory.push({ timestamp: new Date().toISOString(), text: observation });
+      saveMemory(memory);
       return {
-        content: [{ type: "text", text: "Observation saved successfully to session memory." }],
+        content: [{ type: "text", text: "Observation saved to session memory." }],
       };
     }
   );
 
-  // Tool: search_observations
   server.tool(
     "search_observations",
-    "Searches previously saved observations in the session memory using a keyword query.",
+    "Searches saved observations using a keyword query.",
     { query: z.string().describe("Keyword to search for in memory.") },
     async ({ query }) => {
-      const mem = loadMemory();
-      const results = mem.filter(o => o.text.toLowerCase().includes(query.toLowerCase()));
+      const memory = loadMemory();
+      const results = memory.filter((entry) => entry.text.toLowerCase().includes(query.toLowerCase()));
+
       if (results.length === 0) {
-        return { content: [{ type: "text", text: `No observations found matching: "${query}"` }] };
+        return { content: [{ type: "text", text: `No observations found matching: \"${query}\"` }] };
       }
-      const lines = results.map(o => `[${o.timestamp}] ${o.text}`);
+
+      const lines = results.map((entry) => `[${entry.timestamp}] ${entry.text}`);
       return {
-        content: [{ type: "text", text: `## Observations matching "${query}"\n\n${lines.join("\n")}` }],
+        content: [{ type: "text", text: `## Observations matching \"${query}\"\n\n${lines.join("\n")}` }],
       };
     }
   );

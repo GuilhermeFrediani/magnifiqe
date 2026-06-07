@@ -1,6 +1,6 @@
 # Stack Perfeita MCP
 
-**MCP server that disciplines coding agents in real projects: anti-hallucination, code validation, and state checkpoints.** Move from vibe coding to rules + active validation.
+**MCP server for real coding agents: anti-hallucination, bad-code gates, checkpoint/resume, context compaction, and strict output hygiene.**
 
 [![Cursor](https://img.shields.io/badge/Cursor-Ready-purple)](https://cursor.com)
 [![Windsurf](https://img.shields.io/badge/Windsurf-Ready-blue)](https://windsurf.com)
@@ -8,43 +8,51 @@
 [![VS Code](https://img.shields.io/badge/VS_Code-Ready-blue)](https://code.visualstudio.com)
 [![npm version](https://img.shields.io/npm/v/stack-perfeita-mcp.svg)](https://www.npmjs.com/package/stack-perfeita-mcp)
 
-## Why This Instead of a System Prompt?
+## Why this instead of a static system prompt?
 
-A system prompt is static text. Stack Perfeita is a **live MCP server** that provides:
-- **Executable validation** — `validate_bad_code` and `dependency_validate` actually check code, not just ask the LLM to self-police.
-- **State checkpoints** — `checkpoint_task` / `resume_task` let the agent roll back to a known-good state after failures.
-- **Progressive disclosure** — rules are loaded on-demand via tools, not dumped into context all at once.
+A static system prompt can ask for discipline. Stack Perfeita can **enforce parts of it at runtime**:
+
+- **Executable validation** — `validate_bad_code`, `dependency_validate`, and `validate_response_style` check outputs instead of trusting self-policing.
+- **Formal state** — `get_project_state`, `checkpoint_task`, `list_checkpoints`, and `resume_task` reduce drift across long sessions.
+- **Progressive disclosure** — rules are loaded on demand instead of dumping every policy into context at once.
+- **Project activation** — `activate_project()` builds a usable manifest in one call.
 
 ---
 
-## Quick Install (60 seconds)
+## Install
+
+### Public package names
+- **npm package:** `stack-perfeita-mcp`
+- **setup CLI:** `stack-perfeita`
+- **server name in IDEs:** `stack-perfeita`
+- **human-facing product name:** **Stack Perfeita MCP**
+
+### Fast path
 
 ```bash
-# Install globally
 npm install -g stack-perfeita-mcp
-
-# In your project folder, generate IDE config files:
-stack-perfeita
+stack-perfeita init
 ```
 
-This generates `.cursorrules`, `.windsurfrules`, and `opencode.json` pointing to the MCP server. Each project uses its own `ai-rules/` folder for project-specific rules.
+That does two things:
 
-### Set Up Your Project Rules
+1. Generates IDE config files (`.cursorrules`, `.windsurfrules`, `.github/copilot-instructions.md`, `opencode.json`)
+2. Bootstraps starter `ai-rules/` and `.claude/skills/`
 
-Copy the starter rules into your project:
+### Other setup modes
 
 ```bash
-# In your project root:
-mkdir ai-rules
-# Copy or create your project-specific rules in ai-rules/
+stack-perfeita           # generate IDE config only
+stack-perfeita init      # config + starter rules + starter skills
+stack-perfeita --minimal # only .cursorrules
+stack-perfeita --force   # overwrite existing generated files
 ```
 
 ---
 
-## Native IDE Configuration
+## Native IDE configuration
 
-### Cursor (most popular)
-In Cursor Settings -> MCP -> Add Custom:
+### Cursor
 
 ```json
 {
@@ -56,10 +64,8 @@ In Cursor Settings -> MCP -> Add Custom:
   }
 }
 ```
-**Restart Cursor** -> done!
 
 ### Windsurf
-Windsurf -> **Plugins** (sidebar) -> **Add Custom MCP**:
 
 ```json
 {
@@ -73,158 +79,218 @@ Windsurf -> **Plugins** (sidebar) -> **Add Custom MCP**:
 ```
 
 ### Claude Desktop / Claude Code
+
 ```bash
 claude mcp add stack-perfeita --command "npx stack-perfeita-mcp --rules-dir ./ai-rules"
 ```
 
-### VS Code + GitHub Copilot
-Place `.github/copilot-instructions.md` in your project root. The `stack-perfeita` CLI does this automatically.
+### VS Code + Copilot
+
+Run `stack-perfeita` or `stack-perfeita init` in the project root. It will generate `.github/copilot-instructions.md` automatically.
 
 ---
 
-## How It Works
+## How it works
 
+```text
+Project root
+    |
+    +--> ai-rules/               # project rules
+    +--> .claude/skills/         # reusable task playbooks
+    +--> .claude/project_state.json
+    |
+    v
+stack-perfeita (setup)
+    |
+    +--> generates IDE config files
+    |
+    v
+npx stack-perfeita-mcp --rules-dir ./ai-rules
+    |
+    +--> activation
+    +--> validation
+    +--> checkpoints
+    +--> compaction
+    +--> rule / skill retrieval
+    |
+    v
+IDE agent
 ```
-Your Project
-    |
-    v
-stack-perfeita (setup) --> generates .cursorrules + opencode.json
-    |
-    v
-MCP Server (npx stack-perfeita-mcp)
-    |
-    +--> ai-rules/        (your project rules)
-    +--> .claude/skills/  (task playbooks)
-    +--> .claude/project_state.json  (state checkpoints)
-    |
-    v
-IDE Agent <-- tools: validate, search, checkpoint, resume
-```
 
 ---
 
-## Core Features
+## Core features
 
-- **PASS/HALT validation** — `validate_bad_code` stops bad code (15 patterns + AST metrics + risk score), `dependency_validate` catches hallucinated imports.
-- **State checkpoints** — save project state, create checkpoints, resume from any point. No more losing context in long sessions.
-- **Compaction layer** — `compact_logs`, `compact_diff`, `compact_conversation_state` for long sessions.
-- **Model profiles** — `get_model_profile` returns tuned config for Claude, GPT, or Gemini.
-- **Project activation** — `activate_project` builds a full manifest (stack, rules, skills, state, fingerprint) in one call.
-- **Adaptive terseness** — behavioral rules enforce concise output, expanding only when risk or debugging demands it.
-- **Progressive disclosure** — rules loaded on-demand via tools, not dumped into context.
-- **Python support** — bad patterns for Python code too (empty except, print debug, TODO).
-
----
-
-## Demo: Before vs After
-
-**Without Stack Perfeita:**
-> Agent generates code with `any` types, hallucinated imports, and no validation.
-> Session drifts after 20 messages, losing track of decisions.
-
-**With Stack Perfeita:**
-> `validate_bad_code` catches `any` before commit (RISK SCORE: 15/100 — HALT).
-> `dependency_validate` catches phantom import `@utils/helpers`.
-> `checkpoint_task("auth-done")` saves state.
-> Next session: `resume_task()` restores full context.
+- **Rotten Foundation Rule** — do not build on top of obviously broken code.
+- **Rule of 2** — same failure twice -> HALT.
+- **Code gate** — blockers, warnings, advisories, plus AST metrics.
+- **Response-style gate** — block excitation tokens, filler, and verbose narration.
+- **State + checkpoints** — resume work without asking the LLM to "remember harder".
+- **Compaction tools** — shrink logs, diffs, and long sessions before they rot context.
+- **Model profiles** — Claude / GPT / Gemini guidance without fragmenting the product philosophy.
+- **Project activation** — one-call manifest for stack, rules, skills, state, and cache strategy.
+- **Caveman Mode** — explicit ultra-compact mode when token pressure is real.
 
 ---
 
-## Exposed Tools (25 tools)
+## Exposed tools (28 tools)
 
 | Tool | What it does |
 |---|---|
-| `list_rules()` | Lists all available rule files |
-| `get_rules(topic, mode)` | Reads rules (`summary` = description only, `full` = entire content) |
-| `get_context(module_path)` | Returns CONTEXT.md for a module folder |
-| `validate_bad_code(code)` | **15 patterns + AST metrics** -> risk score 0-100 PASS/WARN/HALT |
-| `validate_git_commit(msg)` | Validates Conventional Commits format |
-| `dependency_validate(path)` | Do imports exist? Checks relative, bare, tsconfig, Node builtins |
-| `smart_outline(path)` | AST-based outline of all symbols in a file |
-| `smart_unfold(path, name)` | Extracts just one specific function from a long file |
-| `smart_read(path, mode)` | Intelligent reader: auto/outline/full/symbol modes |
-| `list_skills()` | Lists available playbooks in `.claude/skills` |
-| `get_skill(name)` | Loads instructions for a specific task |
-| `save_observation(obs)` | Saves architectural decisions across chats |
-| `search_observations(q)` | Searches project memory |
-| `get_project_state(section?)` | Returns full project state or a specific section |
-| `save_project_state(section, content)` | Updates a section of project state |
-| `checkpoint_task(label)` | Creates a snapshot of current state for rollback |
-| `resume_task(label?)` | Restores state from a checkpoint |
-| `run_command(name, args)` | Runs a structured script from `ai-rules/commands` |
-| `compress_markdown(path)` | Minifies markdown in-memory to save input tokens |
-| `compact_conversation_state(summary)` | Saves structured conversation state to free context |
-| `compact_logs(log_text)` | Extracts errors/warnings from logs, discards noise |
-| `compact_diff(diff_text)` | Summarizes unified diff: files, hunks, line counts |
-| `promote_summary_to_checkpoint(label)` | Promotes compacted state to a formal checkpoint |
-| `get_model_profile(model)` | Returns tuned config for Claude, GPT, or Gemini |
-| `activate_project(root?)` | Builds full project manifest with fingerprint |
-| `get_rules_bundle(mode)` | All rules in stable order for prompt caching |
+| `list_rules()` | Lists rule files available in `ai-rules/` |
+| `get_rules(topic, mode)` | Reads one rule file by topic or filename |
+| `get_context(module_path)` | Reads a module-level `CONTEXT.md` |
+| `get_rules_bundle(mode)` | Stable, cache-friendly rules index or full bundle |
+| `validate_bad_code(code, file_path?)` | Blockers + warnings + advisories + AST metrics |
+| `validate_response_style(text, mode)` | Blocks excitation tokens, filler, and verbose narration |
+| `validate_git_commit(message)` | Checks Conventional Commits format |
+| `dependency_validate(file_path)` | Fast-path detector for hallucinated imports/assets |
+| `smart_outline(file_path)` | Structural outline of a file |
+| `smart_unfold(file_path, symbol_name)` | Expands a specific symbol only |
+| `smart_read(file_path, mode, symbol_name?)` | Intelligent reader for long files |
+| `list_skills()` | Lists reusable playbooks in `.claude/skills/` |
+| `get_skill(name)` | Loads one specific skill |
+| `run_command(name, args?)` | Returns predefined command prompts from `ai-rules/commands/` |
+| `save_observation(observation)` | Persists important observations |
+| `search_observations(query)` | Searches saved observations |
+| `get_project_state(section?)` | Reads full formal project state or one section |
+| `save_project_state(section, content)` | Updates one state section |
+| `checkpoint_task(label)` | Saves checkpoint snapshot |
+| `list_checkpoints()` | Lists saved checkpoints |
+| `resume_task(label?)` | Restores state from checkpoint |
+| `compact_conversation_state(summary)` | Stores condensed conversation state |
+| `compact_logs(log_text, keep_errors?)` | Keeps useful signal, discards noise |
+| `compact_diff(diff_text)` | Summarizes changed files/hunks |
+| `promote_summary_to_checkpoint(label)` | Turns compacted state into a formal checkpoint |
+| `get_model_profile(model)` | Returns Claude / GPT / Gemini profile guidance |
+| `activate_project(project_root?)` | Builds full project manifest |
+| `compress_markdown(path)` | Token-minifies long markdown files |
 
 ---
 
 ## Architecture
 
-```
+```text
 src/
-  index.js          # Entry point: config, server init, connect
-  config.js         # Constants: RULES_DIR, TOPIC_MAP, BAD_PATTERNS
-  helpers.js        # readFile, minifyTokens, safeResolvePath
-  rate-limiter.js   # Anti-loop rate limiter
-  resources.js      # MCP resource registrations
-  rules.js          # list_rules, get_rules, get_context
-  validators.js     # validate_bad_code (regex+AST), validate_git_commit, dependency_validate
+  index.js          # server entrypoint
+  config.js         # constants, rules metadata, bad-code + response-style patterns
+  helpers.js        # file reading, token minify, path helpers
+  rate-limiter.js   # anti-loop protection on hot tools
+  resources.js      # MCP resources for ai-rules
+  rules.js          # list_rules, get_rules, get_context, get_rules_bundle
+  validators.js     # code validation, response-style validation, dependency validation
   skills.js         # list_skills, get_skill
-  code-reading.js   # smart_outline, smart_unfold, smart_read (AST via acorn-loose)
+  code-reading.js   # smart_outline, smart_unfold, smart_read, AST metrics
   commands.js       # run_command
   memory.js         # save_observation, search_observations
-  project-state.js  # get/save/checkpoint/resume project state
-  compaction.js     # compact_logs, compact_diff, compact_conversation_state, promote_summary_to_checkpoint
-  profiles.js       # get_model_profile (Claude, GPT, Gemini)
-  activation.js     # activate_project (manifest builder with fingerprint)
+  project-state.js  # formal state + checkpoints
+  compaction.js     # compaction helpers for logs/diffs/state
+  profiles.js       # model-specific operating profiles
+  activation.js     # project manifest builder
 ```
 
-Each module stays under 300 lines (per the project's own `09-bad-patterns-halt.md` rule).
+The goal is modularity by responsibility. Some analyzers are necessarily larger, but the design keeps the server split by concern rather than one monolithic "god file".
 
 ---
 
-## Prompt Recipes
+## Prompt recipes
 
-### Ignition (Session Start)
-> "STACK-PERFEITA MCP ACTIVE. Call `list_rules`, read `get_rules('behavior')`, call `get_project_state`. OUTPUT-GATE MANDATORY."
+### 1. New project / fresh session
 
-### Checkpoint (Course Correction)
-> "CHECKPOINT MCP. Call `checkpoint_task('before-refactor')`. Return to concise mode."
+```text
+Activate Stack Perfeita in this project.
 
-### State Recovery
-> "Resume from last checkpoint. Call `resume_task` and continue from where we left off."
+1. Call activate_project()
+2. Call get_model_profile("claude")   # or gpt / gemini
+3. Call get_rules_bundle("index")
+4. Call get_project_state()
+5. Work in adaptive terseness
+6. Before final code: validate_bad_code
+7. Before new imports/assets: dependency_validate
+8. If the same failure happens twice -> HALT
+9. If foundation is rotten -> stop feature work and propose fixing the base first
+```
+
+### 2. Resume an ongoing project
+
+```text
+Resume this project with Stack Perfeita.
+
+1. Call activate_project()
+2. Call get_project_state()
+3. Call list_checkpoints()
+4. If needed, call resume_task()
+5. Load only the rules needed for the current task
+6. Continue from the last valid step, not from scratch
+```
+
+### 3. Reinforce essentials / anti-loop / anti-drift
+
+```text
+Reinforce Stack Perfeita essentials.
+
+- Return to concise mode
+- Reload current state with get_project_state()
+- Re-read only the rule needed
+- Same failure twice -> HALT
+- Validate code before delivery
+- Validate imports after adding them
+- Do not invent APIs, files, or behavior
+- Continue exactly from the last proven step
+```
+
+### 4. Force ultra-compact output
+
+```text
+CAVEMAN MODE: ACTIVE.
+
+- Zero excitation tokens
+- No filler, no warm-up, no process narration
+- Keep technical precision
+- If answer becomes long prose, run validate_response_style in caveman mode first
+```
+
+---
+
+## Demo
+
+**Without Stack Perfeita**
+> Agent invents imports, writes code with `any`, loses track after a long session.
+
+**With Stack Perfeita**
+> `validate_bad_code` flags `any` as a blocker -> HALT.
+> `dependency_validate` catches a phantom import before merge.
+> `checkpoint_task("before-auth-refactor")` creates rollback point.
+> Next session uses `list_checkpoints()` + `resume_task()` to continue from a proven state.
 
 ---
 
 ## Roadmap
 
-### Shipped (v4.0)
-- Modular architecture (15 modules)
-- 25 MCP tools including state/checkpoint/resume, compaction, profiles, activation
-- AST-based code validation with risk scoring (acorn-loose)
-- Compaction layer for long sessions
-- Model-specific profiles (Claude, GPT, Gemini)
-- Project activation manifest with fingerprint
-- Per-project setup via npx
-- 80+ tests, zero dependencies beyond MCP SDK + zod + acorn
+### Shipped
+- Modular server architecture
+- 28 MCP tools
+- Code gate + response-style gate
+- Formal project state + checkpoint listing/resume
+- Context compaction helpers
+- Project activation manifest
+- Bootstrap installer for per-project starter packs
+- Model profiles for Claude / GPT / Gemini
 
 ### Next
-- Multi-language AST support (Python via tree-sitter)
-- Semantic search across observations
-- Auto-compaction triggers based on token count
-- Remote project state sync
+- Deeper module resolution for monorepos / package exports
+- Better TypeScript-aware parsing beyond tolerant AST fallback
+- Automatic state trimming based on growth thresholds
+- Change-set validation against actual diffs
+- Foundation audit as a first-class tool
 
 ---
 
 ## Contributing
 
-1. **New pattern in `validate_bad_code`** -> PR in `src/config.js` (BAD_PATTERNS array)
-2. **New rule** -> `ai-rules/12-new-rule.md`
-3. **New Slash Command** -> `ai-rules/commands/`
+1. **New bad-code or response-style pattern** -> `src/config.js`
+2. **New rule** -> `ai-rules/`
+3. **New reusable prompt command** -> `ai-rules/commands/`
+4. **New workflow playbook** -> `.claude/skills/`
 
-**Star if it helped your workflow!**
+**If this improves your agent workflow, star the repo.**

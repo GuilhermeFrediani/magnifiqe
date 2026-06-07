@@ -1,35 +1,44 @@
-# AIPIHKAL Protocol: The True Strict Workflow (Anti-Hallucination)
+# AIPIHKAL Protocol: Strict Workflow for Real Tasks
 
-> **META:** This file defines the fundamental behavior rules, tool execution, and hallucination mitigation for any LLM operating in this project. **Under no circumstances** can the guidelines below be ignored.
+> **META:** This file defines the operational invariants for long-running coding sessions: evidence first, zero blind looping, and no delivery without verification.
 
 ---
 
-## 1. The Rule of 2 (Anti-Loop and Anti-Delirium)
-- **End of Trial and Error:** You are forbidden from entering a loop guessing code.
-- **How it works:** If you generate code, run a test or script and it **fails**, you have the right to **one (1) single correction attempt** by analyzing the root cause.
-- **If attempt 2 fails:** Stop coding immediately (HALT). Return to the human saying: `"LOOP DETECTED. Manual intervention required. Failed at X and Y."`
-- **NEVER** try a third blind correction.
+## 1. Rule of 2 (Anti-Loop)
+- If code/test/run fails once -> analyze root cause.
+- You get **one correction attempt**.
+- If the second attempt fails for the same or a very similar reason -> **HALT**.
+- Report the blocker clearly. Do not keep guessing.
 
-## 2. Anti-Hallucination Rules (Grounded Reality)
-- **Demand Full Context:** Never assume the existence of files, folders, libraries or variables.
-- **NEVER code in the dark:** It's forbidden to guess method names from a library. Consult the documentation, existing tests, or use the `dependency_validate` and `smart_outline` / `smart_unfold` tools.
-- **Mandatory Proof:** Immediately after modifying a file (`write` / `edit`), you **MUST** run a verification (Linter, Compiler, or read the modified file) to prove it worked. Never claim "I modified the file" without the proof of reading it afterwards.
+## 2. Grounded work only
+- Never assume files, folders, imports, APIs, or symbols exist.
+- Before editing large code, inspect structure first (`smart_outline`, `smart_read`, `smart_unfold`).
+- Before claiming a new import/path works, validate it.
+- Before long sessions, activate project context and read state instead of "trying to remember".
 
-## 3. Task Management (Zero Loop)
-- **One Step at a Time:** Strictly solve one item at a time.
-- The human is the **Final Arbiter of State**. In case of disaster (e.g., breaking dependencies in bash), warn immediately and ask the user to run `git status`.
+## 3. Mandatory proof after changes
+Immediately after a real modification, collect proof:
+- read the changed file,
+- run the relevant test/build/lint/typecheck,
+- or produce another concrete verification signal.
 
-## 4. The MANDATORY Output-Gate (Verification Gate)
-Before delivering any final response:
+Never claim "done" without proof.
 
-1. List the prompt requirements.
-2. Mark each one: ✓ implemented | ✗ omitted + reason.
-3. Ensure validation tools ran without error (`validate_bad_code` and `dependency_validate`).
+## 4. One step at a time
+- Solve one concrete problem at a time.
+- Avoid hidden scope expansion during a bugfix.
+- If the base is rotten, stop the feature and fix the base first.
 
-| Claim | Requires | Insufficient (Hallucination) |
-|-------|--------|-------------|
-| "Tests pass" | Test output: 0 failures | "The logic looks correct" |
-| "Build works" | Build command: exit 0 | "Linter passed" |
-| "Bug fixed" | Symptom test: passes | "I changed the variable" |
+## 5. Output gate
+Before delivering a final answer:
+1. Requirements checked.
+2. Code validated if code changed.
+3. Imports/assets validated if new references were introduced.
+4. Long prose checked for filler if needed.
+5. Claims backed by evidence.
 
-Without filled OUTPUT-GATE, you failed the system.
+| Claim | Requires | Not enough |
+|---|---|---|
+| "tests pass" | real test output | "logic looks right" |
+| "build works" | build exit 0 | "linter passed" |
+| "bug fixed" | symptom no longer reproduces | "I changed the code" |

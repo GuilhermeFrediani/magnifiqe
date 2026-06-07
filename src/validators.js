@@ -1,17 +1,16 @@
 /**
  * Stack Perfeita MCP — Validator tools
- * validate_bad_code (regex + AST + risk score), validate_git_commit, dependency_validate (robust)
+ * validate_bad_code, validate_response_style, validate_git_commit, dependency_validate.
  */
 
 import { z } from "zod";
-import { existsSync, readdirSync } from "fs";
-import { resolve, dirname, join, basename } from "path";
-import { BAD_PATTERNS } from "./config.js";
+import { existsSync } from "fs";
+import { resolve, dirname, join, basename, extname } from "path";
+import { BAD_PATTERNS, RESPONSE_STYLE_PATTERNS } from "./config.js";
 import { readFile } from "./helpers.js";
 import { rateLimiter } from "./rate-limiter.js";
 import { analyzeCodeMetrics } from "./code-reading.js";
 
-// ─── Node.js built-in modules ───────────────────────────────────────────────
 const NODE_BUILTINS = new Set([
   "assert", "async_hooks", "buffer", "child_process", "cluster", "console",
   "constants", "crypto", "dgram", "diagnostics_channel", "dns", "domain",
@@ -20,7 +19,6 @@ const NODE_BUILTINS = new Set([
   "readline", "repl", "stream", "string_decoder", "sys", "timers",
   "tls", "trace_events", "tty", "url", "util", "v8", "vm", "wasi",
   "worker_threads", "zlib",
-  // node: prefix variants
   "node:assert", "node:buffer", "node:child_process", "node:crypto",
   "node:dns", "node:events", "node:fs", "node:http", "node:https",
   "node:net", "node:os", "node:path", "node:process", "node:stream",
@@ -28,13 +26,6 @@ const NODE_BUILTINS = new Set([
   "node:worker_threads", "node:zlib",
 ]);
 
-function getFileLang(filePath) {
-  if (/\.(js|ts|jsx|tsx|mjs|cjs)$/.test(filePath)) return "js";
-  if (/\.py$/.test(filePath)) return "py";
-  return null;
-}
-
-// ─── Risk scoring thresholds ────────────────────────────────────────────────
 const THRESHOLDS = {
   FUNC_SIZE_WARN: 50,
   FUNC_SIZE_HALT: 100,
@@ -49,162 +40,262 @@ const THRESHOLDS = {
 const SCORE_PASS_MAX = 20;
 const SCORE_WARN_MAX = 50;
 
+function inferCodeLang(code, filePath) {
+  const ext = (filePath ? extname(filePath).toLowerCase() : "");
+  if ([".ts", ".tsx"].includes(ext)) return "ts";
+  if ([".js", ".jsx", ".mjs", ".cjs"].includes(ext)) return "js";
+  if (ext === ".py") return "py";
+
+  if (/^\s*(from\s+\w+\s+import|import\s+\w+|def\s+\w+\(|class\s+\w+\s*[:(])/m.test(code)) return "py";
+  if (/\binterface\s+\w+|\btype\s+\w+\s*=|:\s*[A-Z][A-Za-z0-9_<>,\[\]\s|]+|as\s+const\b/.test(code)) return "ts";
+  return "js";
+}
+
+function severityScore(severity) {
+  if (severity === "blocker") return 20;
+  if (severity === "warning") return 8;
+  return 3;
+}
+
+function formatBucket(title, items) {
+  if (items.length === 0) return `- ${title}: none`;
+  return [`- ${title} (${items.length}):`, ...items.map((item) => `  - ${item}`)].join("\n");
+}
+
+export function analyzeResponseStyle(text, mode = "adaptive") {
+  const blockerHits = [];
+  const warningHits = [];
+  const advisoryHits = [];
+
+  for (const pattern of RESPONSE_STYLE_PATTERNS) {
+    if (pattern.regex.test(text)) {
+      const line = `[${pattern.id}] ${pattern.msg}`;
+      if (pattern.severity === "blocker") blockerHits.push(line);
+      else if (pattern.severity === "warning") warningHits.push(line);
+      else advisoryHits.push(line);
+    }
+  }
+
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  if (mode === "caveman" && wordCount > 120) {
+    warningHits.push(`[verbosity] ${wordCount} words — too verbose for Caveman Mode`);
+  } else if (mode === "adaptive" && wordCount > 220) {
+    advisoryHits.push(`[verbosity] ${wordCount} words — consider compaction or tighter summary`);
+  }
+
+  let verdict = "PASS";
+  if (blockerHits.length > 0) verdict = "HALT";
+  else if (warningHits.length > 0 || advisoryHits.length > 0) verdict = "WARN";
+
+  return {
+    verdict,
+    wordCount,
+    blockers: blockerHits,
+    warnings: warningHits,
+    advisories: advisoryHits,
+  };
+}
+
+function buildCodeValidationReport({ code, filePath }) {
+  const lang = inferCodeLang(code, filePath);
+  const blockers = [];
+  const warnings = [];
+  const advisories = [];
+  let score = 0;
+
+  for (const pattern of BAD_PATTERNS) {
+    if (pattern.lang && pattern.lang !== lang) continue;
+    if (!pattern.regex.test(code)) continue;
+
+    const line = `[${pattern.id}] ${pattern.msg}`;
+    score += severityScore(pattern.severity);
+
+    if (pattern.severity === "blocker") blockers.push(line);
+    else if (pattern.severity === "warning") warnings.push(line);
+    else advisories.push(line);
+  }
+
+  const lineCount = code.split("\n").length;
+  if (lineCount >= THRESHOLDS.FILE_SIZE_HALT) {
+    score += 10;
+    warnings.push(`[file-size] ${lineCount} lines — split file or isolate responsibilities`);
+  } else if (lineCount >= THRESHOLDS.FILE_SIZE_WARN) {
+    score += 5;
+    advisories.push(`[file-size] ${lineCount} lines — monitor growth`);
+  }
+
+  const metrics = analyzeCodeMetrics(code);
+  const largeFunctions = metrics.functions.filter((fn) => fn.lines >= THRESHOLDS.FUNC_SIZE_WARN);
+  for (const fn of largeFunctions) {
+    if (fn.lines >= THRESHOLDS.FUNC_SIZE_HALT) {
+      score += 10;
+      warnings.push(`[function-size] ${fn.name}: ${fn.lines} lines`);
+    } else {
+      score += 5;
+      advisories.push(`[function-size] ${fn.name}: ${fn.lines} lines`);
+    }
+  }
+
+  const complexFunctions = metrics.functions.filter((fn) => fn.complexity >= THRESHOLDS.COMPLEXITY_WARN);
+  for (const fn of complexFunctions) {
+    if (fn.complexity >= THRESHOLDS.COMPLEXITY_HALT) {
+      score += 15;
+      warnings.push(`[complexity] ${fn.name}: ${fn.complexity}`);
+    } else {
+      score += 5;
+      advisories.push(`[complexity] ${fn.name}: ${fn.complexity}`);
+    }
+  }
+
+  if (metrics.maxNesting >= THRESHOLDS.NESTING_HALT) {
+    score += 10;
+    warnings.push(`[nesting] ${metrics.maxNesting} levels`);
+  } else if (metrics.maxNesting >= THRESHOLDS.NESTING_WARN) {
+    score += 5;
+    advisories.push(`[nesting] ${metrics.maxNesting} levels`);
+  }
+
+  const isTypeScript = filePath ? /\.(ts|tsx)$/.test(filePath) : lang === "ts";
+  if (isTypeScript) {
+    const untypedFunctions = metrics.functions.filter(
+      (fn) => !fn.hasReturnType && fn.name !== "<arrow>" && fn.name !== "<anonymous>"
+    );
+    if (untypedFunctions.length > 0 && untypedFunctions.length <= 5) {
+      score += 3;
+      advisories.push(`[return-type] Missing explicit return type: ${untypedFunctions.map((fn) => fn.name).join(", ")}`);
+    }
+  }
+
+  if (filePath) {
+    const TEST_EXTS = [".js", ".ts", ".mjs", ".cjs"];
+    const base = basename(filePath).replace(/\.(js|ts|jsx|tsx|mjs|cjs)$/, "");
+    const testDirs = [
+      dirname(filePath),
+      join(dirname(filePath), "..", "test"),
+      join(dirname(filePath), "..", "tests"),
+      join(dirname(filePath), "..", "__tests__"),
+    ];
+    const hasTests = testDirs.some((dir) =>
+      TEST_EXTS.some((ext) => existsSync(join(dir, `${base}.test${ext}`)))
+    );
+    const hasExports = /export\s+(function|const|class|default)|module\.exports/.test(code);
+    if (hasExports && !hasTests) {
+      score += 5;
+      advisories.push(`[tests] No test file found for module "${base}"`);
+    }
+  }
+
+  score = Math.min(score, 100);
+
+  let verdict = "PASS";
+  if (blockers.length > 0) verdict = "HALT";
+  else if (score <= SCORE_PASS_MAX) verdict = "PASS";
+  else if (score <= SCORE_WARN_MAX) verdict = "WARN";
+  else verdict = "HALT";
+
+  return {
+    lang,
+    score,
+    verdict,
+    blockers,
+    warnings,
+    advisories,
+    metrics,
+    lineCount,
+  };
+}
+
 export function registerValidatorsTools(server) {
-  // Tool: validate_bad_code
   server.tool(
     "validate_bad_code",
-    "Checks code against bad patterns (regex + AST analysis). Returns risk score 0-100 with PASS/WARN/HALT verdict. Regex: any, console.log, eval, var, innerHTML, etc. AST: function size, cyclomatic complexity, nesting depth. Use BEFORE submitting code.",
-    { code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python)."),
-      file_path: z.string().optional().describe("Absolute path to the source file (enables missing test detection).") },
+    "Checks code against strong signals (blockers), structural warnings, and style advisories. Uses regex + AST metrics. Returns risk score 0-100 with PASS/WARN/HALT. Best used before shipping code or claiming success.",
+    {
+      code: z.string().describe("Code snippet to validate (JavaScript/TypeScript/Python)."),
+      file_path: z.string().optional().describe("Absolute path to the source file. Helps detect TypeScript and missing test files."),
+    },
     async ({ code, file_path }) => {
       const rateLimitHit = rateLimiter.check("validate_bad_code");
       if (rateLimitHit) {
         return { content: [{ type: "text", text: rateLimitHit }] };
       }
 
-      let score = 0;
-      const findings = [];
+      const report = buildCodeValidationReport({ code, filePath: file_path });
+      const sections = [
+        `RISK SCORE: ${report.score}/100 (${report.verdict})`,
+        `- Language guess: ${report.lang}`,
+        `- Lines: ${report.lineCount}`,
+        formatBucket("BLOCKERS", report.blockers),
+        formatBucket("WARNINGS", report.warnings),
+        formatBucket("ADVISORIES", report.advisories),
+      ];
 
-      // Phase 1: Regex patterns
-      const regexHits = [];
-      for (const pattern of BAD_PATTERNS) {
-        if (pattern.regex.test(code)) {
-          regexHits.push(`[${pattern.id}] ${pattern.msg}`);
-          score += 15;
-        }
+      if (report.verdict === "HALT") {
+        sections.push("", "Fix blockers first. If blockers are empty, reduce warnings before proceeding.");
+      } else if (report.verdict === "WARN") {
+        sections.push("", "Warnings do not block by themselves, but they should be reviewed before merge.");
       }
-
-      if (regexHits.length > 0) {
-        findings.push(`- [HALT] Regex patterns (${regexHits.length} detected):`);
-        regexHits.forEach(h => findings.push(`  - ${h}`));
-      } else {
-        findings.push("- [PASS] Regex patterns: 0 detected");
-      }
-
-      // Phase 2: AST metrics (JS/TS only)
-      const lineCount = code.split("\n").length;
-
-      // File size
-      if (lineCount >= THRESHOLDS.FILE_SIZE_HALT) {
-        score += 10;
-        findings.push(`- [HALT] File size: ${lineCount} lines (limit ${THRESHOLDS.FILE_SIZE_HALT})`);
-      } else if (lineCount >= THRESHOLDS.FILE_SIZE_WARN) {
-        score += 5;
-        findings.push(`- [WARN] File size: ${lineCount} lines (limit ${THRESHOLDS.FILE_SIZE_WARN})`);
-      } else {
-        findings.push(`- [INFO] File size: ${lineCount} lines (ok)`);
-      }
-
-      // AST-based checks
-      const metrics = analyzeCodeMetrics(code);
-
-      // Function size
-      const largeFunctions = metrics.functions.filter(f => f.lines >= THRESHOLDS.FUNC_SIZE_WARN);
-      if (largeFunctions.length > 0) {
-        for (const fn of largeFunctions) {
-          if (fn.lines >= THRESHOLDS.FUNC_SIZE_HALT) {
-            score += 10;
-            findings.push(`- [HALT] Function ${fn.name}: ${fn.lines} lines (limit ${THRESHOLDS.FUNC_SIZE_HALT})`);
-          } else {
-            score += 5;
-            findings.push(`- [WARN] Function ${fn.name}: ${fn.lines} lines (limit ${THRESHOLDS.FUNC_SIZE_WARN})`);
-          }
-        }
-      }
-
-      // Cyclomatic complexity
-      const complexFunctions = metrics.functions.filter(f => f.complexity >= THRESHOLDS.COMPLEXITY_WARN);
-      for (const fn of complexFunctions) {
-        if (fn.complexity >= THRESHOLDS.COMPLEXITY_HALT) {
-          score += 15;
-          findings.push(`- [HALT] Cyclomatic complexity: ${fn.complexity} in ${fn.name} (limit ${THRESHOLDS.COMPLEXITY_HALT})`);
-        } else {
-          score += 5;
-          findings.push(`- [WARN] Cyclomatic complexity: ${fn.complexity} in ${fn.name} (limit ${THRESHOLDS.COMPLEXITY_WARN})`);
-        }
-      }
-
-      // Nesting depth
-      if (metrics.maxNesting >= THRESHOLDS.NESTING_HALT) {
-        score += 10;
-        findings.push(`- [HALT] Nesting depth: ${metrics.maxNesting} levels (limit ${THRESHOLDS.NESTING_HALT})`);
-      } else if (metrics.maxNesting >= THRESHOLDS.NESTING_WARN) {
-        score += 5;
-        findings.push(`- [WARN] Nesting depth: ${metrics.maxNesting} levels (limit ${THRESHOLDS.NESTING_WARN})`);
-      }
-
-      // Typedness: missing return type annotations (TS advisory)
-      const untypedFunctions = metrics.functions.filter(f => !f.hasReturnType && f.name !== "<arrow>" && f.name !== "<anonymous>");
-      if (untypedFunctions.length > 0 && untypedFunctions.length <= 5) {
-        score += 3;
-        findings.push(`- [WARN] Missing return type: ${untypedFunctions.map(f => f.name).join(", ")}`);
-      }
-
-      // Missing test detection (only when file_path is provided)
-      if (file_path) {
-        const TEST_EXTS = [".js", ".ts", ".mjs", ".cjs"];
-        const base = basename(file_path).replace(/\.(js|ts|jsx|tsx|mjs|cjs)$/, "");
-        const testDirs = [
-          dirname(file_path),
-          join(dirname(file_path), "..", "test"),
-          join(dirname(file_path), "..", "tests"),
-          join(dirname(file_path), "..", "__tests__"),
-        ];
-        const hasTests = testDirs.some(dir =>
-          TEST_EXTS.some(ext => existsSync(join(dir, `${base}.test${ext}`)))
-        );
-        const hasExports = /export\s+(function|const|class|default)|module\.exports/.test(code);
-        if (hasExports && !hasTests) {
-          score += 5;
-          findings.push(`- [WARN] No test file found for module "${base}" (searched test/, tests/, __tests__/)`);
-        } else {
-          findings.push(`- [INFO] Test coverage: ${hasTests ? "test file found" : "no exports to test"}`);
-        }
-      }
-
-      // Cap score at 100
-      score = Math.min(score, 100);
-
-      // Verdict
-      let verdict;
-      if (score <= SCORE_PASS_MAX) verdict = "PASS";
-      else if (score <= SCORE_WARN_MAX) verdict = "WARN";
-      else verdict = "HALT";
-
-      const header = `RISK SCORE: ${score}/100 (${verdict})`;
-      const body = findings.join("\n");
-      const footer = verdict === "HALT" ? "\n\nFix HALT items before proceeding." : verdict === "WARN" ? "\n\nWARN items are advisory. Fix if possible." : "";
 
       return {
-        content: [{ type: "text", text: `${header}\n${body}${footer}` }],
+        content: [{ type: "text", text: sections.join("\n") }],
       };
     }
   );
 
-  // Tool: validate_git_commit
+  server.tool(
+    "validate_response_style",
+    "Checks whether a natural-language response contains excitation tokens, hesitation filler, or overly verbose prose. Use before long explanatory answers. Mode 'caveman' enforces a tighter verbosity budget.",
+    {
+      text: z.string().describe("Draft response text to validate."),
+      mode: z.enum(["adaptive", "caveman"]).default("adaptive").describe("adaptive = concise but normal. caveman = ultra-compact output mode."),
+    },
+    async ({ text, mode }) => {
+      const rateLimitHit = rateLimiter.check("validate_response_style");
+      if (rateLimitHit) {
+        return { content: [{ type: "text", text: rateLimitHit }] };
+      }
+
+      const report = analyzeResponseStyle(text, mode);
+      const body = [
+        `STYLE CHECK: ${report.verdict}`,
+        `- Mode: ${mode}`,
+        `- Word count: ${report.wordCount}`,
+        formatBucket("BLOCKERS", report.blockers),
+        formatBucket("WARNINGS", report.warnings),
+        formatBucket("ADVISORIES", report.advisories),
+      ];
+
+      if (report.verdict === "HALT") {
+        body.push("", "Remove filler/process narration before sending this answer.");
+      }
+
+      return {
+        content: [{ type: "text", text: body.join("\n") }],
+      };
+    }
+  );
+
   server.tool(
     "validate_git_commit",
-    "Validates commit message against Conventional Commits format (feat/fix/docs/style/refactor/perf/test/chore). Use ALWAYS before creating a commit.",
+    "Validates commit message against Conventional Commits format (feat/fix/docs/style/refactor/perf/test/chore). Use before creating a commit.",
     { message: z.string().describe("Commit message to validate.") },
     async ({ message }) => {
       const commitRegex = /^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]+\))?:\s.+/;
 
       if (commitRegex.test(message)) {
         return {
-          content: [{ type: "text", text: "PASS — Valid Conventional Commits format. Proceed with commit." }],
+          content: [{ type: "text", text: "PASS — Valid Conventional Commits format." }],
         };
       }
 
       return {
-        content: [{ type: "text", text: "HALT — Invalid format. Must be: type(scope): description\nValid types: feat, fix, docs, style, refactor, perf, test, chore" }],
+        content: [{ type: "text", text: "HALT — Invalid format. Will be: type(scope): description. Valid types: feat, fix, docs, style, refactor, perf, test, chore." }],
       };
     }
   );
 
-  // Tool: dependency_validate
   server.tool(
     "dependency_validate",
-    "Checks if import/require references exist on disk. Handles relative imports (./x, ../x), bare imports (lodash, express), Node built-ins, @/ aliases (tsconfig paths), and ~/ aliases. Detects hallucinated imports.",
+    "Fast-path validator for imports and asset references. Checks relative imports, node_modules, Node built-ins, common tsconfig aliases, and local HTML assets. Use to catch hallucinated references before claiming a module exists.",
     { file_path: z.string().describe("Absolute path to the file to validate dependencies for.") },
     async ({ file_path }) => {
       const rateLimitHit = rateLimiter.check("dependency_validate");
@@ -223,10 +314,8 @@ export function registerValidatorsTools(server) {
       }
 
       const fileDir = dirname(absPath);
-      const missing = [];
-      const skipped = [];
+      const missing = new Set();
 
-      // Find project root (walk up to find package.json)
       let projectRoot = fileDir;
       for (let i = 0; i < 10; i++) {
         if (existsSync(join(projectRoot, "package.json"))) break;
@@ -235,7 +324,6 @@ export function registerValidatorsTools(server) {
         projectRoot = parent;
       }
 
-      // Load tsconfig paths if available
       const tsconfigPaths = {};
       const tsconfigPath = join(projectRoot, "tsconfig.json");
       if (existsSync(tsconfigPath)) {
@@ -244,125 +332,107 @@ export function registerValidatorsTools(server) {
           const paths = tsconfig?.compilerOptions?.paths || {};
           for (const [alias, targets] of Object.entries(paths)) {
             const cleanAlias = alias.replace("/*", "");
-            const target = Array.isArray(targets) ? targets[0].replace("/*", "") : targets.replace("/*", "");
+            const firstTarget = Array.isArray(targets) ? targets[0] : targets;
+            const target = String(firstTarget).replace("/*", "");
             tsconfigPaths[cleanAlias] = resolve(projectRoot, tsconfig?.compilerOptions?.baseUrl || ".", target);
           }
-        } catch { /* ignore parse errors */ }
+        } catch {
+          // ignore malformed tsconfig
+        }
       }
 
       const EXTENSIONS = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".json"];
 
+      function candidateExists(basePath) {
+        const candidates = [basePath];
+        for (const ext of EXTENSIONS) candidates.push(basePath + ext);
+        candidates.push(join(basePath, "index.js"), join(basePath, "index.ts"), join(basePath, "index.tsx"));
+        return candidates.some((candidate) => existsSync(candidate));
+      }
+
       function resolveImport(importPath) {
-        // 1. Relative imports
         if (importPath.startsWith(".")) {
-          const candidates = [resolve(fileDir, importPath)];
-          for (const ext of EXTENSIONS) {
-            candidates.push(resolve(fileDir, importPath + ext));
-          }
-          candidates.push(resolve(fileDir, importPath, "index.js"));
-          candidates.push(resolve(fileDir, importPath, "index.ts"));
-          return candidates.some(c => existsSync(c));
+          return candidateExists(resolve(fileDir, importPath));
         }
 
-        // 2. Node built-ins
         if (NODE_BUILTINS.has(importPath) || NODE_BUILTINS.has(importPath.split("/")[0])) {
           return true;
         }
 
-        // 3. tsconfig @/ aliases
         for (const [alias, targetDir] of Object.entries(tsconfigPaths)) {
-          if (importPath.startsWith(alias + "/") || importPath === alias) {
-            const rest = importPath.slice(alias.length + 1);
-            const resolved = rest ? resolve(targetDir, rest) : targetDir;
-            const candidates = [resolved];
-            for (const ext of EXTENSIONS) candidates.push(resolved + ext);
-            if (candidates.some(c => existsSync(c))) return true;
+          if (importPath === alias || importPath.startsWith(alias + "/")) {
+            const rest = importPath === alias ? "" : importPath.slice(alias.length + 1);
+            return candidateExists(rest ? resolve(targetDir, rest) : targetDir);
           }
         }
 
-        // 4. ~/ alias (common in some frameworks)
         if (importPath.startsWith("~/")) {
-          const resolved = resolve(projectRoot, importPath.slice(2));
-          const candidates = [resolved];
-          for (const ext of EXTENSIONS) candidates.push(resolved + ext);
-          if (candidates.some(c => existsSync(c))) return true;
+          return candidateExists(resolve(projectRoot, importPath.slice(2)));
         }
 
-        // 5. Bare imports — check node_modules
-        const pkgName = importPath.startsWith("@") ? importPath.split("/").slice(0, 2).join("/") : importPath.split("/")[0];
-        const nodeModulesPath = join(projectRoot, "node_modules", pkgName);
-        if (existsSync(nodeModulesPath)) return true;
-
-        return false;
+        const pkgName = importPath.startsWith("@")
+          ? importPath.split("/").slice(0, 2).join("/")
+          : importPath.split("/")[0];
+        return existsSync(join(projectRoot, "node_modules", pkgName));
       }
 
-      // JS/TS ES imports
       const importRegex = /import\s+(?:[\w{},*\s]+\s+from\s+)?['"]([^'"]+)['"]/g;
       let match;
       while ((match = importRegex.exec(content)) !== null) {
         const importPath = match[1];
-        if (!resolveImport(importPath)) {
-          missing.push(`import "${importPath}"`);
-        }
+        if (!resolveImport(importPath)) missing.add(`import \"${importPath}\"`);
       }
 
-      // CommonJS require
       const requireRegex = /require\(\s*['"]([^'"]+)['"]\s*\)/g;
       while ((match = requireRegex.exec(content)) !== null) {
-        const requirePath = match[1];
-        if (!resolveImport(requirePath)) {
-          missing.push(`require("${requirePath}")`);
-        }
+        const importPath = match[1];
+        if (!resolveImport(importPath)) missing.add(`require(\"${importPath}\")`);
       }
 
-      // Dynamic import()
       const dynamicImportRegex = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
       while ((match = dynamicImportRegex.exec(content)) !== null) {
         const importPath = match[1];
-        if (!resolveImport(importPath)) {
-          missing.push(`import("${importPath}")`);
-        }
+        if (!resolveImport(importPath)) missing.add(`import(\"${importPath}\")`);
       }
 
       // HTML: <script src="x"> and <link href="x">
       const scriptRegex = /<script\s+[^>]*src=['"]([^'"]+)['"]/g;
       while ((match = scriptRegex.exec(content)) !== null) {
         const src = match[1];
-        if (!src.startsWith("http") && !src.startsWith("//")) {
-          const resolved = resolve(fileDir, src);
-          if (!existsSync(resolved)) {
-            missing.push(`<script src="${src}">`);
-          }
+        if (!src.startsWith("http") && !src.startsWith("//") && !existsSync(resolve(fileDir, src))) {
+          missing.add(`<script src=\"${src}\">`);
         }
       }
 
       const linkRegex = /<link\s+[^>]*href=['"]([^'"]+\.css)['"]/g;
       while ((match = linkRegex.exec(content)) !== null) {
         const href = match[1];
-        if (!href.startsWith("http") && !href.startsWith("//")) {
-          const resolved = resolve(fileDir, href);
-          if (!existsSync(resolved)) {
-            missing.push(`<link href="${href}">`);
-          }
+        if (!href.startsWith("http") && !href.startsWith("//") && !existsSync(resolve(fileDir, href))) {
+          missing.add(`<link href=\"${href}\">`);
         }
       }
 
-      if (missing.length > 0) {
+      if (missing.size > 0) {
         return {
           content: [{
             type: "text",
-            text: `HALT — ${missing.length} missing reference(s):\n\n${missing.map(m => `- ${m}`).join("\n")}\n\nPossible hallucinated import. Fix before proceeding.\n\nChecked: relative paths, node_modules, tsconfig paths (${Object.keys(tsconfigPaths).length} aliases), Node built-ins.`,
+            text: `HALT — ${missing.size} missing reference(s):\n\n${[...missing].map((item) => `- ${item}`).join("\n")}\n\nPossible hallucinated import/reference. Checked: relative paths, node_modules, tsconfig aliases (${Object.keys(tsconfigPaths).length}), Node built-ins, HTML assets.`,
           }],
         };
       }
 
-      const aliasInfo = Object.keys(tsconfigPaths).length > 0 ? ` (${Object.keys(tsconfigPaths).length} tsconfig aliases loaded)` : "";
+      const aliasInfo = Object.keys(tsconfigPaths).length > 0
+        ? ` (${Object.keys(tsconfigPaths).length} tsconfig aliases loaded)`
+        : "";
+
       return {
         content: [{
           type: "text",
-          text: `PASS — All imports and references resolve to existing files.${aliasInfo}\nChecked: relative, bare (node_modules), tsconfig paths, Node built-ins, HTML assets.`,
+          text: `PASS — All imports and local asset references resolved${aliasInfo}. Checked: relative paths, node_modules, tsconfig aliases, Node built-ins, HTML assets.`,
         }],
       };
     }
   );
 }
+
+export { buildCodeValidationReport };

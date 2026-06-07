@@ -1,6 +1,6 @@
 /**
  * Stack Perfeita MCP — Configuration
- * All constants, topic maps, rule descriptions, and bad code patterns.
+ * All constants, topic maps, rule descriptions, response-style rules, and bad-code patterns.
  */
 
 import { resolve, dirname } from "path";
@@ -8,18 +8,26 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = resolve(__dirname, "..");
+const PROJECT_ROOT = resolve(process.cwd());
 
 const args = process.argv.slice(2);
 const rulesDirFlag = args.indexOf("--rules-dir");
-const RULES_DIR = rulesDirFlag !== -1
+const RULES_DIR = rulesDirFlag !== -1 && args[rulesDirFlag + 1]
   ? resolve(args[rulesDirFlag + 1])
-  : resolve(process.cwd(), "ai-rules");
+  : resolve(PROJECT_ROOT, "ai-rules");
 
 const SRC_DIR = resolve(RULES_DIR, "../src");
-const SKILLS_DIR = resolve(process.cwd(), ".claude/skills");
+const SKILLS_DIR = resolve(PROJECT_ROOT, ".claude/skills");
 const COMMANDS_DIR = resolve(RULES_DIR, "commands");
-const MEMORY_FILE = resolve(process.cwd(), ".claude", "session_memory.json");
-const PROJECT_STATE_FILE = resolve(process.cwd(), ".claude", "project_state.json");
+const MEMORY_FILE = resolve(PROJECT_ROOT, ".claude", "session_memory.json");
+const PROJECT_STATE_FILE = resolve(PROJECT_ROOT, ".claude", "project_state.json");
+
+const STATE_LIMITS = {
+  maxArrayItems: 50,
+  maxCheckpoints: 20,
+  maxCompactionHistory: 30,
+  maxObservations: 100,
+};
 
 const TOPIC_MAP = {
   "overview":     "00-project-overview.md",
@@ -63,9 +71,9 @@ const RULE_DESCRIPTIONS = {
   "00-project-overview.md":         "Project domain, stack, and non-functional requirements",
   "01-ai-workflow-strict.md":       "AI workflow rules — anti-hallucination, P.E.R., zero-loop",
   "02-coding-standards.md":         "Caveman style — naming, variables, loops, functions",
-  "03-token-economy.md":            "Token compression — block filler, semantic summarization",
+  "03-token-economy.md":            "Token compression — block filler, semantic compaction",
   "04-security-secrets.md":         "OWASP 2025/2026, secrets management, agentic risks",
-  "05-debugging-mastery.md":        "Structured debugging — no console.log, reproduce-reduce-prove",
+  "05-debugging-mastery.md":        "Structured debugging — no blind logs, reproduce-reduce-prove",
   "06-ci-cd-testing.md":            "CI/CD as product — pipeline gates, SAST, coverage",
   "07-frontend-semantic.md":        "Semantic HTML, a11y, CSS modern, Core Web Vitals",
   "08-backend-architecture.md":     "Backend rules — validation at edge, ACID, stateless, N+1",
@@ -75,33 +83,44 @@ const RULE_DESCRIPTIONS = {
 };
 
 const BAD_PATTERNS = [
-  { regex: /\bany\b/,                              id: "any",          msg: "TypeScript any — infer correct type", lang: "ts" },
-  { regex: /catch\s*\([^)]*\)\s*\{\s*\}/,         id: "empty-catch",  msg: "Empty catch — Fail Fast, handle the error" },
-  { regex: /catch\s*\{\s*\}/,                      id: "empty-catch",  msg: "Empty catch — Fail Fast, handle the error" },
-  { regex: /console\.log\((?!{)/,                  id: "console-log",  msg: "Raw console.log — use structured logger or debugger", lang: "js" },
-  { regex: /function\s+\w+[^{]{200,}/,            id: "god-function", msg: "God Function — break into smaller functions" },
-  { regex: /if.*if.*if.*if/,                       id: "arrow-code",   msg: "Arrow code — use Early Returns, reduce nesting" },
-  { regex: /innerHTML\s*=/,                        id: "innerhtml",    msg: "Unsafe innerHTML — use textContent or replaceChildren" },
-  { regex: /\bvar\s+/,                             id: "var",          msg: "var detected — use const/let" },
-  { regex: /[^=!]==[^=]/,                          id: "weak-eq",      msg: "Weak comparison == — use ===", lang: "js" },
-  { regex: /\/\/\s*(TODO|FIXME)/i,                 id: "todo-inline",  msg: "Technical debt inline — resolve or create issue" },
-  { regex: /\beval\s*\(/,                          id: "eval",         msg: "eval prohibited — injection risk" },
-  // Python-specific patterns
-  { regex: /except\s*:\s*pass/,                    id: "empty-except",  msg: "Empty except — handle the exception or log it", lang: "py" },
-  { regex: /except\s+Exception\s*:\s*pass/,        id: "broad-except",  msg: "Broad exception swallowed — handle specific error", lang: "py" },
-  { regex: /\bprint\s*\(/,                         id: "print-debug",   msg: "print() for debug — use logging module or debugger", lang: "py" },
-  { regex: /#\s*(TODO|FIXME)/i,                    id: "todo-py",       msg: "Technical debt inline — resolve or create issue", lang: "py" },
+  { regex: /\bany\b/,                              id: "any",            msg: "TypeScript any — infer or define the real type", lang: "ts", severity: "blocker" },
+  { regex: /catch\s*\([^)]*\)\s*\{\s*\}/,     id: "empty-catch",    msg: "Empty catch — handle, rethrow, or log with context", severity: "blocker" },
+  { regex: /catch\s*\{\s*\}/,                    id: "empty-catch",    msg: "Empty catch — handle, rethrow, or log with context", severity: "blocker" },
+  { regex: /console\.log\((?!\s*\{)/,            id: "console-log",    msg: "Blind console.log — prefer structured log or debugger", lang: "js", severity: "warning" },
+  { regex: /function\s+\w+[^{]{200,}/,            id: "god-function",   msg: "Large function signature/body hint — split responsibilities", severity: "warning" },
+  { regex: /if.*if.*if.*if/,                       id: "arrow-code",     msg: "Deep conditional nesting — use early returns or guard clauses", severity: "warning" },
+  { regex: /innerHTML\s*=/,                        id: "innerhtml",      msg: "Unsafe innerHTML — use textContent, template sanitization, or DOM APIs", severity: "blocker" },
+  { regex: /\bvar\s+/,                             id: "var",            msg: "var detected — prefer const/let", lang: "js", severity: "advisory" },
+  { regex: /[^=!]==[^=]/,                          id: "weak-eq",        msg: "Weak comparison == — use === unless coercion is deliberate", lang: "js", severity: "warning" },
+  { regex: /\/\/\s*(TODO|FIXME)/i,                 id: "todo-inline",    msg: "Inline TODO/FIXME — resolve now or track externally", severity: "advisory" },
+  { regex: /\beval\s*\(/,                          id: "eval",           msg: "eval prohibited — injection and integrity risk", severity: "blocker" },
+  { regex: /except\s*:\s*pass/,                    id: "empty-except",   msg: "Empty except — handle the exception or rethrow", lang: "py", severity: "blocker" },
+  { regex: /except\s+Exception\s*:\s*pass/,        id: "broad-except",   msg: "Broad exception swallowed — catch specific error", lang: "py", severity: "blocker" },
+  { regex: /\bprint\s*\(/,                         id: "print-debug",    msg: "print() debug left in code — prefer logging or debugger", lang: "py", severity: "advisory" },
+  { regex: /#\s*(TODO|FIXME)/i,                    id: "todo-py",         msg: "Inline TODO/FIXME — resolve now or track externally", lang: "py", severity: "advisory" },
+];
+
+const RESPONSE_STYLE_PATTERNS = [
+  { regex: /\b(humm+|hmm+|uh+|umm+)\b/i, id: "hesitation", msg: "Hesitation token detected", severity: "blocker" },
+  { regex: /\b(let me think|let me see|i'?ll analyze|i will analyze|vou analisar|deixa eu pensar|deixa eu ver)\b/i, id: "process-commentary", msg: "Process commentary detected", severity: "blocker" },
+  { regex: /\b(got it|understood|alright|okay then|sure|claro|certo|entendido|perfeito)\b/i, id: "warmup", msg: "Warm-up filler detected", severity: "warning" },
+  { regex: /\b(of course|absolutely|happy to help|com certeza|sem problemas)\b/i, id: "courtesy", msg: "Courtesy filler detected", severity: "warning" },
+  { regex: /\b(here(?:'s| is) the code|here(?:'s| is) the updated code|aqui está|segue abaixo)\b/i, id: "preamble", msg: "Preamble before answer detected", severity: "warning" },
+  { regex: /\b(the next step is|agora vou|vou criar|vou fazer|o próximo passo é)\b/i, id: "narration", msg: "Narration about process detected", severity: "warning" },
 ];
 
 export {
   ROOT_DIR,
+  PROJECT_ROOT,
   RULES_DIR,
   SRC_DIR,
   SKILLS_DIR,
   COMMANDS_DIR,
   MEMORY_FILE,
   PROJECT_STATE_FILE,
+  STATE_LIMITS,
   TOPIC_MAP,
   RULE_DESCRIPTIONS,
   BAD_PATTERNS,
+  RESPONSE_STYLE_PATTERNS,
 };

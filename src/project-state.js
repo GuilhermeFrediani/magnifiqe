@@ -1,13 +1,12 @@
 /**
  * Stack Perfeita MCP — Project State tools
- * get_project_state, save_project_state, checkpoint_task, resume_task
- * Formal state management for long coding sessions: objective, decisions, risks, checkpoints.
+ * get_project_state, save_project_state, checkpoint_task, list_checkpoints, resume_task
  */
 
 import { z } from "zod";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
-import { PROJECT_STATE_FILE } from "./config.js";
+import { dirname, resolve } from "path";
+import { PROJECT_STATE_FILE, STATE_LIMITS } from "./config.js";
 import { rateLimiter } from "./rate-limiter.js";
 
 const VALID_SECTIONS = [
@@ -20,6 +19,15 @@ const VALID_SECTIONS = [
   "risks",
   "last_error",
 ];
+
+const ARRAY_SECTIONS = new Set([
+  "constraints",
+  "decisions",
+  "files_changed",
+  "next_steps",
+  "open_questions",
+  "risks",
+]);
 
 export function defaultState() {
   return {
@@ -37,25 +45,55 @@ export function defaultState() {
   };
 }
 
-export function loadState() {
-  if (!existsSync(PROJECT_STATE_FILE)) return defaultState();
+function sanitizeState(state) {
+  const safe = { ...defaultState(), ...state };
+
+  for (const section of ARRAY_SECTIONS) {
+    const values = Array.isArray(safe[section]) ? safe[section] : [];
+    const unique = [];
+    const seen = new Set();
+    for (const value of values) {
+      const normalized = String(value).trim();
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      unique.push(normalized);
+    }
+    safe[section] = unique.slice(-STATE_LIMITS.maxArrayItems);
+  }
+
+  safe.checkpoints = Array.isArray(safe.checkpoints)
+    ? safe.checkpoints.slice(-STATE_LIMITS.maxCheckpoints)
+    : [];
+
+  safe.compaction_history = Array.isArray(safe.compaction_history)
+    ? safe.compaction_history.slice(-STATE_LIMITS.maxCompactionHistory)
+    : [];
+
+  safe.objective = String(safe.objective || "").trim();
+  safe.last_error = safe.last_error ? String(safe.last_error).trim() : null;
+  safe.updated_at = new Date().toISOString();
+
+  return safe;
+}
+
+export function loadState(filePath = PROJECT_STATE_FILE) {
+  if (!existsSync(filePath)) return defaultState();
   try {
-    const data = JSON.parse(readFileSync(PROJECT_STATE_FILE, "utf-8"));
-    // Merge with defaults to ensure all sections exist
-    return { ...defaultState(), ...data };
+    const data = JSON.parse(readFileSync(filePath, "utf-8"));
+    return sanitizeState(data);
   } catch {
     return defaultState();
   }
 }
 
-export function saveState(state) {
+export function saveState(state, filePath = PROJECT_STATE_FILE) {
   try {
-    const claudeDir = resolve(process.cwd(), ".claude");
-    if (!existsSync(claudeDir)) {
-      mkdirSync(claudeDir, { recursive: true });
+    const targetDir = dirname(resolve(filePath));
+    if (!existsSync(targetDir)) {
+      mkdirSync(targetDir, { recursive: true });
     }
-    state.updated_at = new Date().toISOString();
-    writeFileSync(PROJECT_STATE_FILE, JSON.stringify(state, null, 2), "utf-8");
+    const sanitized = sanitizeState(state);
+    writeFileSync(filePath, JSON.stringify(sanitized, null, 2), "utf-8");
   } catch (e) {
     process.stderr.write(`Failed to save project state: ${e.message}\n`);
   }
@@ -68,7 +106,7 @@ function formatState(state, section) {
     if (Array.isArray(value)) {
       return value.length === 0
         ? `## ${section}\n\n(empty)`
-        : `## ${section}\n\n${value.map((v, i) => `${i + 1}. ${v}`).join("\n")}`;
+        : `## ${section}\n\n${value.map((entry, index) => `${index + 1}. ${entry}`).join("\n")}`;
     }
     return `## ${section}\n\n${value ?? "(empty)"}`;
   }
@@ -77,37 +115,44 @@ function formatState(state, section) {
 
   for (const key of VALID_SECTIONS) {
     const value = state[key];
+    lines.push(`### ${key}`);
     if (Array.isArray(value)) {
-      lines.push(`### ${key}`);
-      if (value.length === 0) {
-        lines.push("(empty)");
-      } else {
-        value.forEach((v, i) => lines.push(`${i + 1}. ${v}`));
-      }
+      if (value.length === 0) lines.push("(empty)");
+      else value.forEach((entry, index) => lines.push(`${index + 1}. ${entry}`));
     } else {
-      lines.push(`### ${key}`);
       lines.push(value ?? "(empty)");
     }
     lines.push("");
   }
 
-  const cpCount = state.checkpoints?.length ?? 0;
-  lines.push(`### checkpoints`);
-  lines.push(`${cpCount} checkpoint(s) saved`);
+  lines.push("### checkpoints", `${state.checkpoints?.length ?? 0} checkpoint(s) saved`, "");
+  lines.push("### compaction_history", `${state.compaction_history?.length ?? 0} compacted summary(ies) saved`);
 
   return lines.join("\n");
 }
 
+function formatCheckpointList(checkpoints) {
+  if (!checkpoints || checkpoints.length === 0) {
+    return "No checkpoints found. Use checkpoint_task(label) to create one first.";
+  }
+
+  const lines = checkpoints
+    .slice()
+    .reverse()
+    .map((checkpoint, index) => {
+      const objective = checkpoint.snapshot?.objective || "(no objective)";
+      return `${index + 1}. ${checkpoint.label} — ${checkpoint.timestamp}\n   objective: ${objective}`;
+    });
+
+  return `## Checkpoints (${checkpoints.length})\n\n${lines.join("\n")}`;
+}
+
 export function registerProjectStateTools(server) {
-  // Tool: get_project_state
   server.tool(
     "get_project_state",
-    "Returns the current project state (objective, decisions, risks, next_steps, etc.) or a specific section. Use this to understand where the project stands before making changes.",
+    "Returns the current project state or one specific section. Use before resuming work or making risky changes.",
     {
-      section: z
-        .enum(VALID_SECTIONS)
-        .optional()
-        .describe("Specific section to retrieve. Omit for full state."),
+      section: z.enum(VALID_SECTIONS).optional().describe("Specific section to retrieve. Omit for the full state."),
     },
     async ({ section }) => {
       const rateLimitHit = rateLimiter.check("get_project_state");
@@ -122,17 +167,12 @@ export function registerProjectStateTools(server) {
     }
   );
 
-  // Tool: save_project_state
   server.tool(
     "save_project_state",
-    "Updates a specific section of the project state. Use after significant decisions, file changes, or when risks/questions arise. Arrays are appended to (not replaced).",
+    "Updates one section of the project state. Array sections are appended with dedupe; scalar sections are replaced.",
     {
       section: z.enum(VALID_SECTIONS).describe("Which section to update."),
-      content: z
-        .string()
-        .describe(
-          "Content to save. For array sections (decisions, risks, etc.), this is appended. For scalar sections (objective, last_error), this replaces."
-        ),
+      content: z.string().describe("Content to save for that section."),
     },
     async ({ section, content }) => {
       const rateLimitHit = rateLimiter.check("save_project_state");
@@ -141,43 +181,28 @@ export function registerProjectStateTools(server) {
       }
 
       const state = loadState();
-
-      const arraySections = [
-        "constraints",
-        "decisions",
-        "files_changed",
-        "next_steps",
-        "open_questions",
-        "risks",
-      ];
-
-      if (arraySections.includes(section)) {
-        state[section].push(content);
+      if (ARRAY_SECTIONS.has(section)) {
+        state[section] = [...state[section], content];
       } else {
         state[section] = content;
       }
-
       saveState(state);
 
+      const fresh = loadState();
       return {
-        content: [
-          {
-            type: "text",
-            text: `Project state updated: ${section}.\n\n${formatState(state, section)}`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `Project state updated: ${section}.\n\n${formatState(fresh, section)}`,
+        }],
       };
     }
   );
 
-  // Tool: checkpoint_task
   server.tool(
     "checkpoint_task",
-    "Creates a snapshot of the current project state with a label. Use before starting risky operations or at natural breakpoints to enable rollback via resume_task.",
+    "Creates a labeled snapshot of the current project state. Use before risky edits, refactors, or context resets.",
     {
-      label: z
-        .string()
-        .describe("Short label for this checkpoint (e.g., 'before-refactor', 'auth-done')."),
+      label: z.string().describe("Short checkpoint label, e.g. 'before-refactor' or 'auth-done'."),
     },
     async ({ label }) => {
       const rateLimitHit = rateLimiter.check("checkpoint_task");
@@ -186,41 +211,48 @@ export function registerProjectStateTools(server) {
       }
 
       const state = loadState();
-
-      // Snapshot = state without checkpoints, deep-cloned to avoid shared references
-      const { checkpoints: _cp, ...rest } = state;
+      const { checkpoints: _ignored, ...rest } = state;
       const snapshot = JSON.parse(JSON.stringify(rest));
 
-      const checkpoint = {
+      state.checkpoints = state.checkpoints || [];
+      state.checkpoints.push({
         label,
         timestamp: new Date().toISOString(),
         snapshot,
-      };
-
-      state.checkpoints = state.checkpoints || [];
-      state.checkpoints.push(checkpoint);
+      });
       saveState(state);
 
       return {
-        content: [
-          {
-            type: "text",
-            text: `Checkpoint saved: "${label}" (${state.checkpoints.length} total).\n\nUse resume_task(label="${label}") to restore this state.`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `Checkpoint saved: \"${label}\".\n\n${formatCheckpointList(loadState().checkpoints)}`,
+        }],
       };
     }
   );
 
-  // Tool: resume_task
+  server.tool(
+    "list_checkpoints",
+    "Lists saved checkpoints in reverse chronological order with labels, timestamps, and snapshot objectives.",
+    {},
+    async () => {
+      const rateLimitHit = rateLimiter.check("list_checkpoints");
+      if (rateLimitHit) {
+        return { content: [{ type: "text", text: rateLimitHit }] };
+      }
+
+      const state = loadState();
+      return {
+        content: [{ type: "text", text: formatCheckpointList(state.checkpoints) }],
+      };
+    }
+  );
+
   server.tool(
     "resume_task",
-    "Restores project state from a checkpoint. If label is provided, restores that specific checkpoint. If omitted, restores the most recent checkpoint. Use when resuming a session or after a failed operation.",
+    "Restores project state from a checkpoint. If label is omitted, restores the most recent checkpoint.",
     {
-      label: z
-        .string()
-        .optional()
-        .describe("Checkpoint label to restore. Omit for most recent."),
+      label: z.string().optional().describe("Checkpoint label to restore. Omit for most recent."),
     },
     async ({ label }) => {
       const rateLimitHit = rateLimiter.check("resume_task");
@@ -230,48 +262,33 @@ export function registerProjectStateTools(server) {
 
       const state = loadState();
       const checkpoints = state.checkpoints || [];
-
       if (checkpoints.length === 0) {
         return {
-          content: [
-            {
-              type: "text",
-              text: "No checkpoints found. Use checkpoint_task(label) to create one first.",
-            },
-          ],
+          content: [{ type: "text", text: "No checkpoints found. Use checkpoint_task(label) to create one first." }],
         };
       }
 
-      let checkpoint;
-      if (label) {
-        checkpoint = checkpoints.find((cp) => cp.label === label);
-        if (!checkpoint) {
-          const available = checkpoints.map((cp) => `- ${cp.label} (${cp.timestamp})`).join("\n");
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Checkpoint "${label}" not found.\n\nAvailable checkpoints:\n${available}`,
-              },
-            ],
-          };
-        }
-      } else {
-        checkpoint = checkpoints[checkpoints.length - 1];
+      const checkpoint = label
+        ? checkpoints.find((entry) => entry.label === label)
+        : checkpoints[checkpoints.length - 1];
+
+      if (!checkpoint) {
+        return {
+          content: [{ type: "text", text: `Checkpoint \"${label}\" not found.\n\n${formatCheckpointList(checkpoints)}` }],
+        };
       }
 
-      // Restore snapshot into current state, keep checkpoints history
       const restored = { ...defaultState(), ...checkpoint.snapshot, checkpoints };
       saveState(restored);
 
       return {
-        content: [
-          {
-            type: "text",
-            text: `Resumed from checkpoint: "${checkpoint.label}" (${checkpoint.timestamp}).\n\n${formatState(restored)}`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `Resumed from checkpoint: \"${checkpoint.label}\" (${checkpoint.timestamp}).\n\n${formatState(loadState())}`,
+        }],
       };
     }
   );
 }
+
+export { VALID_SECTIONS };

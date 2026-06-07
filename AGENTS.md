@@ -2,43 +2,45 @@
 
 Use este arquivo como contexto de integração para sessões neste repositório.
 
-## 1. Por que (Why)
+## 1. Por que
 Este projeto busca máxima precisão técnica, sem alucinações, com código modular, seguro, testado e econômico em tokens.
 
-## 2. O que (Project Map)
-- `ai-rules/` — Manuais de arquitetura, segurança e fluxo (carregados sob demanda via MCP tools).
-- `.claude/skills/` — Playbooks de tarefas específicas (carregados quando a tarefa corresponder).
-- `src/` — Código do MCP server (12 módulos, ~24 tools).
+## 2. O que
+- `ai-rules/` — Regras profundas de arquitetura, fluxo, segurança, debugging e comportamento.
+- `.claude/skills/` — Playbooks reutilizáveis para tarefas operacionais.
+- `src/` — Código do MCP server, organizado por responsabilidade.
 
-## 3. Como (Core Loop)
-- **Economia de contexto:** Evite filler ("Humm", "Entendido", "Vou analisar"). Seja direto — código, comandos ou perguntas técnicas.
-- **Não construa sobre fundação frágil:** Ao detectar lógica problemática (God Classes, catch vazio, `any`) antes de uma mudança, avise e proponha corrigir a base primeiro (veja `ai-rules/09-bad-patterns-halt.md`).
-- **Modo PLAN:** Para lógicas complexas, proponha um plano antes de implementar.
-- **Rule of 2 (Anti-Loop):** Se um comando ou teste falhar duas vezes com o mesmo erro, pare e reporte ao usuário. Não tente adivinhar.
-- **Debugging estruturado:** Evite `console.log("aqui")` para debugging. Use logs estruturados ou `debugger;` (veja `ai-rules/05-debugging-mastery.md`).
-- **Provas reais:** Valide modificações rodando linter, typecheck ou lendo o arquivo final para confirmar que a edição ocorreu.
-- **Citações:** Ao propor um padrão, mencione qual arquivo do projeto o inspirou.
-- **Requirement-Lock:** Antes de gerar código, liste requisitos. Confirme cada um antes de entregar.
-- **State-aware:** Use `get_project_state()` e `checkpoint_task()` para manter contexto em sessões longas.
+## 3. Como
+- **Zero tokens de excitação:** sem preâmbulo vazio, sem "vou analisar", sem aquecimento verbal.
+- **Fundação Podre:** se a base estiver ruim, pare a feature e proponha corrigir a base antes.
+- **Rule of 2:** se falhar duas vezes pelo mesmo motivo, pare e reporte a causa raiz.
+- **Provas reais:** não declare sucesso sem teste, leitura do arquivo alterado, build, lint ou outra evidência concreta.
+- **Requirement lock:** antes de entregar, confira requisitos atendidos e pendências reais.
+- **State-aware:** use `activate_project()`, `get_project_state()`, `checkpoint_task()` e `list_checkpoints()` em tarefas longas.
+- **Caveman mode:** pode ser ativado explicitamente quando pressão de tokens estiver alta, mas sem perder precisão técnica.
 
-## 4. Divulgação Progressiva (Progressive Disclosure)
-Não carregue todas as regras de uma vez. Leia guias em `ai-rules/` apenas quando o contexto exigir:
-- **Segurança/Senhas:** `ai-rules/04-security-secrets.md`
-- **Debugging JS/TS:** `ai-rules/05-debugging-mastery.md`
-- **Frontend Semântico:** `ai-rules/07-frontend-semantic.md`
-- **CI/CD e Testes:** `ai-rules/06-ci-cd-testing.md`
-- **Fundações e Padrões Ruins:** `ai-rules/09-bad-patterns-halt.md`
-- **Código Honesto:** `ai-rules/02-coding-standards.md`
-- **Economia de Tokens:** `ai-rules/03-token-economy.md`
-- **Regras Universais LLM:** `ai-rules/10-llm-behavioral-rules.md`
-- **Debugging Sistemático:** `ai-rules/11-systematic-debugging.md`
+## 4. Divulgação progressiva
+Não carregue tudo de uma vez. Leia apenas a regra necessária para a tarefa atual:
+- Segurança -> `ai-rules/04-security-secrets.md`
+- Debugging -> `ai-rules/05-debugging-mastery.md`
+- Frontend -> `ai-rules/07-frontend-semantic.md`
+- CI/CD e testes -> `ai-rules/06-ci-cd-testing.md`
+- Fundação podre -> `ai-rules/09-bad-patterns-halt.md`
+- Estilo de código -> `ai-rules/02-coding-standards.md`
+- Economia de tokens -> `ai-rules/03-token-economy.md`
+- Comportamento LLM -> `ai-rules/10-llm-behavioral-rules.md`
+- Debugging sistemático -> `ai-rules/11-systematic-debugging.md`
 
-Use *Skills* (`.claude/skills/`) para tarefas de fluxo:
-- `build-test-verify`: Para testar ou lintar alterações.
-- `create-pull-request`: Para formatar PRs.
-- `core-conventions`: Para regras finas de estilo.
-- `git-commit`: Para convenções de commit.
-- `self-review-checklist`: Para revisão antes de submeter.
+Use *skills* para fluxo operacional quando fizer sentido:
+- `build-test-verify`
+- `create-pull-request`
+- `core-conventions`
+- `git-commit`
+- `self-review-checklist`
 
-## 5. Branching
-Use branches de feature. Evite push direto para a `main`. Siga os padrões da skill `git-commit`.
+## 5. Regra prática de sessão
+- Se o escopo estiver claro -> execute.
+- Se estiver ambíguo, arriscado ou irreversível -> confirme.
+- Antes de código final -> `validate_bad_code`.
+- Antes de explicação longa -> `validate_response_style`.
+- Antes de retomar trabalho antigo -> `list_checkpoints()` e, se necessário, `resume_task()`.
