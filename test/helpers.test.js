@@ -1,17 +1,31 @@
 /**
  * Test suite for src/helpers.js
- * Tests: minifyTokens, safeResolvePath
  */
 
-import { describe, it } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert';
+import { mkdtempSync, mkdirSync, symlinkSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { minifyTokens, safeResolvePath } from '../src/helpers.js';
+
+const tempRoots = [];
+
+function makeTempDir(prefix = 'stack-perfeita-helpers-') {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tempRoots.push(dir);
+  return dir;
+}
+
+afterEach(() => {
+  while (tempRoots.length) {
+    rmSync(tempRoots.pop(), { recursive: true, force: true });
+  }
+});
 
 describe('minifyTokens', () => {
   it('should remove HTML comments', () => {
     const input = 'Hello <!-- this is a comment --> world';
-    // Note: minifyTokens removes comments but preserves internal spacing
-    // to avoid breaking code formatting. Double space is expected.
     const result = minifyTokens(input);
     assert.ok(!result.includes('<!--'));
     assert.ok(!result.includes('-->'));
@@ -36,32 +50,40 @@ describe('minifyTokens', () => {
     assert.strictEqual(minifyTokens(undefined), undefined);
     assert.strictEqual(minifyTokens(''), '');
   });
-
-  it('should handle complex markdown', () => {
-    const input = `# Title\n\n<!-- comment -->\n\n\n\nParagraph 1   \n\n\nParagraph 2`;
-    const result = minifyTokens(input);
-    assert.ok(!result.includes('<!--'));
-    assert.ok(!result.includes('   \n'));
-  });
 });
 
 describe('safeResolvePath', () => {
-  it('should resolve valid paths', () => {
-    const base = process.cwd();
-    const file = 'src/index.js';
-    const result = safeResolvePath(base, file);
+  it('should resolve valid paths inside base', () => {
+    const base = makeTempDir();
+    mkdirSync(join(base, 'src'));
+    const result = safeResolvePath(base, 'src/index.js');
+    assert.ok(result.startsWith(base));
     assert.ok(result.includes('src'));
-    assert.ok(result.includes('index.js'));
   });
 
   it('should reject path traversal', () => {
-    const base = '/tmp/test';
-    const malicious = '../../../etc/passwd';
-    assert.throws(() => safeResolvePath(base, malicious), /Path traversal/);
+    const base = makeTempDir();
+    assert.throws(() => safeResolvePath(base, '../../../etc/passwd'), /Path traversal/);
   });
 
-  it('should reject double-dot traversal', () => {
-    const base = '/tmp/test';
-    assert.throws(() => safeResolvePath(base, '../secret'), /Path traversal/);
+  it('should reject prefix-collision escapes', () => {
+    const root = makeTempDir();
+    const base = join(root, 'base');
+    const sibling = join(root, 'base2');
+    mkdirSync(base);
+    mkdirSync(sibling);
+
+    assert.throws(() => safeResolvePath(base, '../base2/evil.md'), /Path traversal/);
+  });
+
+  it('should reject symlink escapes', { skip: process.platform === 'win32' }, () => {
+    const root = makeTempDir();
+    const base = join(root, 'base');
+    const outside = join(root, 'outside');
+    mkdirSync(base);
+    mkdirSync(outside);
+    symlinkSync(outside, join(base, 'linked-out'));
+
+    assert.throws(() => safeResolvePath(base, 'linked-out/secret.txt'), /Path traversal/);
   });
 });

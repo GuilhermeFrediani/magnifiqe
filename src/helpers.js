@@ -3,16 +3,42 @@
  * File reading, path safety, token minification, rule file listing.
  */
 
-import { readFileSync, readdirSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, readdirSync, existsSync, realpathSync } from "fs";
+import { dirname, isAbsolute, relative, resolve } from "path";
 import { RULES_DIR, RULE_DESCRIPTIONS } from "./config.js";
 
+function getExistingRealpath(inputPath) {
+  if (existsSync(inputPath)) {
+    return realpathSync(inputPath);
+  }
+
+  const parent = dirname(inputPath);
+  if (parent === inputPath) {
+    return resolve(inputPath);
+  }
+
+  if (existsSync(parent)) {
+    return resolve(realpathSync(parent), inputPath.slice(parent.length + 1));
+  }
+
+  return resolve(inputPath);
+}
+
 export function safeResolvePath(base, filename) {
-  const resolved = resolve(base, filename);
-  if (!resolved.startsWith(resolve(base))) {
+  const baseResolved = existsSync(base) ? realpathSync(resolve(base)) : resolve(base);
+  const targetResolved = resolve(baseResolved, filename);
+  const targetCanonical = getExistingRealpath(targetResolved);
+  const rel = relative(baseResolved, targetCanonical);
+
+  if (rel === "") {
+    return targetCanonical;
+  }
+
+  if (rel.startsWith("..") || isAbsolute(rel)) {
     throw new Error(`Path traversal detected: ${filename}`);
   }
-  return resolved;
+
+  return targetCanonical;
 }
 
 export function readFile(filePath) {

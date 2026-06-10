@@ -11,7 +11,12 @@
   "mcp": {
     "stack-perfeita": {
       "type": "local",
-      "command": ["npx", "stack-perfeita-mcp", "--rules-dir", "./ai-rules"],
+      "command": [
+        "npx",
+        "stack-perfeita-mcp",
+        "--rules-dir",
+        "./ai-rules"
+      ],
       "enabled": true
     }
   }

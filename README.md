@@ -127,13 +127,15 @@ IDE agent
 - **Response-style gate** — block excitation tokens, filler, and verbose narration.
 - **State + checkpoints** — resume work without asking the LLM to "remember harder".
 - **Compaction tools** — shrink logs, diffs, and long sessions before they rot context.
-- **Model profiles** — Claude / GPT / Gemini guidance without fragmenting the product philosophy.
+- **Model profiles** — provider family + capability matrix, including weaker-model scaffolding hints.
+- **Role activation** — operational presets for architect, implementer, debugger, reviewer, frontend, backend, multimodal, refactor, and security review.
+- **Task runtime contracts** — formalize objective, acceptance criteria, and step evidence before claiming success.
 - **Project activation** — one-call manifest for stack, rules, skills, state, and cache strategy.
 - **Caveman Mode** — explicit ultra-compact mode when token pressure is real.
 
 ---
 
-## Exposed tools (28 tools)
+## Exposed tools (31 tools)
 
 | Tool | What it does |
 |---|---|
@@ -162,7 +164,10 @@ IDE agent
 | `compact_logs(log_text, keep_errors?)` | Keeps useful signal, discards noise |
 | `compact_diff(diff_text)` | Summarizes changed files/hunks |
 | `promote_summary_to_checkpoint(label)` | Turns compacted state into a formal checkpoint |
-| `get_model_profile(model)` | Returns Claude / GPT / Gemini profile guidance |
+| `get_model_profile(model)` | Returns provider/model capability profile guidance |
+| `activate_role(role, model?, task_type?, stack?)` | Returns operational scaffolding adapted to model strength |
+| `start_task_contract(...)` | Formalizes objective, outputs, non-goals, acceptance criteria, and minimum evidence |
+| `assert_step_evidence(...)` | Records step hypothesis, evidence, verification, and status |
 | `activate_project(project_root?)` | Builds full project manifest |
 | `compress_markdown(path)` | Token-minifies long markdown files |
 
@@ -269,13 +274,15 @@ CAVEMAN MODE: ACTIVE.
 
 ### Shipped
 - Modular server architecture
-- 28 MCP tools
+- 31 MCP tools
 - Code gate + response-style gate
 - Formal project state + checkpoint listing/resume
 - Context compaction helpers
 - Project activation manifest
 - Bootstrap installer for per-project starter packs
-- Model profiles for Claude / GPT / Gemini
+- Capability-aware model profiles
+- Role activation presets
+- Task contract + step evidence runtime
 
 ### Next
 - Deeper module resolution for monorepos / package exports

@@ -1,6 +1,6 @@
 {
   "name": "stack-perfeita-mcp",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "MCP server that disciplines coding agents with validation, state checkpoints, and context control.",
   "type": "module",
   "main": "src/index.js",

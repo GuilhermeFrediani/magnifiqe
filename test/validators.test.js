@@ -49,6 +49,24 @@ describe('BAD_PATTERNS', () => {
     assert.ok(innerHTMLPattern.regex.test(code));
   });
 
+  it('should detect dangerouslySetInnerHTML', () => {
+    const code = 'return <div dangerouslySetInnerHTML={html} />';
+    const pattern = BAD_PATTERNS.find((p) => p.id === 'dangerous-react-html');
+    assert.ok(pattern.regex.test(code));
+  });
+
+  it('should detect child_process exec usage', () => {
+    const code = 'exec(userSuppliedCommand)';
+    const pattern = BAD_PATTERNS.find((p) => p.id === 'child-process-exec');
+    assert.ok(pattern.regex.test(code));
+  });
+
+  it('should detect sensitive localStorage token usage', () => {
+    const code = 'localStorage.setItem("token", jwt)';
+    const pattern = BAD_PATTERNS.find((p) => p.id === 'sensitive-localstorage');
+    assert.ok(pattern.regex.test(code));
+  });
+
   it('should detect inline TODO/FIXME', () => {
     const code1 = '// TODO: fix this later';
     const code2 = '// FIXME: broken logic';

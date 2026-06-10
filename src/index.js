@@ -29,6 +29,8 @@ import { registerMemoryTools } from "./memory.js";
 import { registerProjectStateTools } from "./project-state.js";
 import { registerCompactionTools } from "./compaction.js";
 import { registerProfilesTools } from "./profiles.js";
+import { registerRolesTools } from "./roles.js";
+import { registerTaskRuntimeTools } from "./task-runtime.js";
 import { registerActivationTools } from "./activation.js";
 
 // ─── MCP Protocol Protection ─────────────────────────────────────────────────
@@ -39,7 +41,7 @@ console.log = (...args) => process.stderr.write(args.map(a => typeof a === 'stri
 // ─── Server ──────────────────────────────────────────────────────────────────
 const server = new McpServer({
   name: "stack-perfeita-mcp",
-  version: "4.1.0",
+  version: "4.2.0",
 });
 
 // ─── Register all tools and resources ─────────────────────────────────────────
@@ -53,6 +55,8 @@ registerMemoryTools(server);
 registerProjectStateTools(server);
 registerCompactionTools(server);
 registerProfilesTools(server);
+registerRolesTools(server);
+registerTaskRuntimeTools(server);
 registerActivationTools(server);
 
 // Tool: compress_markdown (token compression utility)
@@ -90,7 +94,7 @@ server.tool(
 const transport = new StdioServerTransport();
 await server.connect(transport);
 
-process.stderr.write(`stack-perfeita-mcp v4.1.0 started\nRules dir: ${RULES_DIR}\n`);
+process.stderr.write(`stack-perfeita-mcp v4.2.0 started\nRules dir: ${RULES_DIR}\n`);
 
 // ─── Orphan Detection ────────────────────────────────────────────────────────
 // Auto-exit when parent process dies (stdin closed / ppid changed)
