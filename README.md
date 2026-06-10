@@ -13,6 +13,7 @@
 A static system prompt can ask for discipline. Stack Perfeita can **enforce parts of it at runtime**:
 
 - **Executable validation** — `validate_bad_code`, `dependency_validate`, and `validate_response_style` check outputs instead of trusting self-policing.
+- **Deeper dependency resolution** — `dependency_validate` now understands monorepos, workspace packages, package `exports`, `tsconfig`/`jsconfig` paths, and Vite aliases.
 - **Formal state** — `get_project_state`, `checkpoint_task`, `list_checkpoints`, and `resume_task` reduce drift across long sessions.
 - **Progressive disclosure** — rules are loaded on demand instead of dumping every policy into context at once.
 - **Project activation** — `activate_project()` builds a usable manifest in one call.
@@ -127,6 +128,8 @@ IDE agent
 - **Response-style gate** — block excitation tokens, filler, and verbose narration.
 - **State + checkpoints** — resume work without asking the LLM to "remember harder".
 - **Compaction tools** — shrink logs, diffs, and long sessions before they rot context.
+- **Automatic state compaction** — project state trims older/oversized entries predictably when thresholds are exceeded.
+- **Stronger code reading** — Babel-first parsing improves decorators, JSX/TSX, typed methods, and class-field analysis.
 - **Model profiles** — provider family + capability matrix, including weaker-model scaffolding hints.
 - **Role activation** — operational presets for architect, implementer, debugger, reviewer, frontend, backend, multimodal, refactor, and security review.
 - **Task runtime contracts** — formalize objective, acceptance criteria, and step evidence before claiming success.
@@ -146,7 +149,7 @@ IDE agent
 | `validate_bad_code(code, file_path?)` | Blockers + warnings + advisories + AST metrics |
 | `validate_response_style(text, mode)` | Blocks excitation tokens, filler, and verbose narration |
 | `validate_git_commit(message)` | Checks Conventional Commits format |
-| `dependency_validate(file_path)` | Fast-path detector for hallucinated imports/assets |
+| `dependency_validate(file_path)` | Fast-path detector for hallucinated imports/assets, now workspace/exports/alias-aware |
 | `smart_outline(file_path)` | Structural outline of a file |
 | `smart_unfold(file_path, symbol_name)` | Expands a specific symbol only |
 | `smart_read(file_path, mode, symbol_name?)` | Intelligent reader for long files |
@@ -184,8 +187,10 @@ src/
   resources.js      # MCP resources for ai-rules
   rules.js          # list_rules, get_rules, get_context, get_rules_bundle
   validators.js     # code validation, response-style validation, dependency validation
+  dependency-resolution.js # workspace/exports/alias-aware import resolution
   skills.js         # list_skills, get_skill
   code-reading.js   # smart_outline, smart_unfold, smart_read, AST metrics
+  state-compaction.js # automatic threshold-based project-state trimming
   commands.js       # run_command
   memory.js         # save_observation, search_observations
   project-state.js  # formal state + checkpoints
@@ -207,13 +212,16 @@ Activate Stack Perfeita in this project.
 
 1. Call activate_project()
 2. Call get_model_profile("claude")   # or gpt / gemini
-3. Call get_rules_bundle("index")
-4. Call get_project_state()
-5. Work in adaptive terseness
-6. Before final code: validate_bad_code
-7. Before new imports/assets: dependency_validate
-8. If the same failure happens twice -> HALT
-9. If foundation is rotten -> stop feature work and propose fixing the base first
+3. Call activate_role("implementer", model="claude")
+4. Call start_task_contract(...)
+5. Call get_rules_bundle("index")
+6. Call get_project_state()
+7. Work in adaptive terseness
+8. Record proof with assert_step_evidence(...)
+9. Before final code: validate_bad_code
+10. Before new imports/assets: dependency_validate
+11. If the same failure happens twice -> HALT
+12. If foundation is rotten -> stop feature work and propose fixing the base first
 ```
 
 ### 2. Resume an ongoing project
@@ -225,8 +233,10 @@ Resume this project with Stack Perfeita.
 2. Call get_project_state()
 3. Call list_checkpoints()
 4. If needed, call resume_task()
-5. Load only the rules needed for the current task
-6. Continue from the last valid step, not from scratch
+5. Re-activate the operational role with activate_role(...)
+6. Re-open or restate the task with start_task_contract(...)
+7. Load only the rules needed for the current task
+8. Continue from the last valid step, not from scratch
 ```
 
 ### 3. Reinforce essentials / anti-loop / anti-drift
@@ -240,6 +250,7 @@ Reinforce Stack Perfeita essentials.
 - Same failure twice -> HALT
 - Validate code before delivery
 - Validate imports after adding them
+- Record step proof with assert_step_evidence(...)
 - Do not invent APIs, files, or behavior
 - Continue exactly from the last proven step
 ```
@@ -285,11 +296,10 @@ CAVEMAN MODE: ACTIVE.
 - Task contract + step evidence runtime
 
 ### Next
-- Deeper module resolution for monorepos / package exports
-- Better TypeScript-aware parsing beyond tolerant AST fallback
-- Automatic state trimming based on growth thresholds
 - Change-set validation against actual diffs
 - Foundation audit as a first-class tool
+- Hybrid validators with deeper semantic/security signals
+- Configurable compaction policy tuning per project
 
 ---
 

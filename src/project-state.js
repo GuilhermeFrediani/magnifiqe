@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname, resolve } from "path";
 import { PROJECT_STATE_FILE, STATE_LIMITS } from "./config.js";
 import { rateLimiter } from "./rate-limiter.js";
+import { autoCompactState } from "./state-compaction.js";
 
 const VALID_SECTIONS = [
   "objective",
@@ -41,6 +42,18 @@ export function defaultState() {
     last_error: null,
     checkpoints: [],
     compaction_history: [],
+    compaction_policy: {
+      enabled: true,
+      threshold_chars: STATE_LIMITS.autoCompactThresholdChars,
+      hard_threshold_chars: STATE_LIMITS.autoCompactHardThresholdChars,
+      preserve_recent_items: STATE_LIMITS.autoCompactKeepRecentItems,
+    },
+    compaction_meta: {
+      auto_compactions: 0,
+      last_auto_compaction_at: null,
+      last_total_chars: 0,
+      last_compacted_chars: 0,
+    },
     updated_at: new Date().toISOString(),
   };
 }
@@ -71,8 +84,22 @@ function sanitizeState(state) {
 
   safe.objective = String(safe.objective || "").trim();
   safe.last_error = safe.last_error ? String(safe.last_error).trim() : null;
-  safe.updated_at = new Date().toISOString();
 
+  safe.compaction_policy = {
+    enabled: safe.compaction_policy?.enabled !== false,
+    threshold_chars: Number(safe.compaction_policy?.threshold_chars) || STATE_LIMITS.autoCompactThresholdChars,
+    hard_threshold_chars: Number(safe.compaction_policy?.hard_threshold_chars) || STATE_LIMITS.autoCompactHardThresholdChars,
+    preserve_recent_items: Number(safe.compaction_policy?.preserve_recent_items) || STATE_LIMITS.autoCompactKeepRecentItems,
+  };
+
+  safe.compaction_meta = {
+    auto_compactions: Number(safe.compaction_meta?.auto_compactions) || 0,
+    last_auto_compaction_at: safe.compaction_meta?.last_auto_compaction_at || null,
+    last_total_chars: Number(safe.compaction_meta?.last_total_chars) || 0,
+    last_compacted_chars: Number(safe.compaction_meta?.last_compacted_chars) || 0,
+  };
+
+  safe.updated_at = new Date().toISOString();
   return safe;
 }
 
@@ -92,8 +119,19 @@ export function saveState(state, filePath = PROJECT_STATE_FILE) {
     if (!existsSync(targetDir)) {
       mkdirSync(targetDir, { recursive: true });
     }
+
     const sanitized = sanitizeState(state);
-    writeFileSync(filePath, JSON.stringify(sanitized, null, 2), "utf-8");
+    const compacted = autoCompactState(sanitized, STATE_LIMITS);
+
+    if (compacted.applied && compacted.event) {
+      compacted.state.compaction_history = [
+        ...(compacted.state.compaction_history || []),
+        compacted.event,
+      ].slice(-STATE_LIMITS.maxCompactionHistory);
+    }
+
+    compacted.state.updated_at = new Date().toISOString();
+    writeFileSync(filePath, JSON.stringify(compacted.state, null, 2), "utf-8");
   } catch (e) {
     process.stderr.write(`Failed to save project state: ${e.message}\n`);
   }
@@ -126,7 +164,12 @@ function formatState(state, section) {
   }
 
   lines.push("### checkpoints", `${state.checkpoints?.length ?? 0} checkpoint(s) saved`, "");
-  lines.push("### compaction_history", `${state.compaction_history?.length ?? 0} compacted summary(ies) saved`);
+  lines.push("### compaction_history", `${state.compaction_history?.length ?? 0} compacted summary(ies) saved`, "");
+  lines.push("### compaction_meta");
+  lines.push(`- Auto compactions: ${state.compaction_meta?.auto_compactions ?? 0}`);
+  lines.push(`- Last auto compaction: ${state.compaction_meta?.last_auto_compaction_at ?? "(none)"}`);
+  lines.push(`- Last state size: ${state.compaction_meta?.last_total_chars ?? 0} chars`);
+  lines.push(`- Last chars trimmed: ${state.compaction_meta?.last_compacted_chars ?? 0}`);
 
   return lines.join("\n");
 }
@@ -169,7 +212,7 @@ export function registerProjectStateTools(server) {
 
   server.tool(
     "save_project_state",
-    "Updates one section of the project state. Array sections are appended with dedupe; scalar sections are replaced.",
+    "Updates one section of the project state. Array sections are appended with dedupe; scalar sections are replaced. Automatic threshold compaction trims older entries when state grows too large.",
     {
       section: z.enum(VALID_SECTIONS).describe("Which section to update."),
       content: z.string().describe("Content to save for that section."),

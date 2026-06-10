@@ -9,13 +9,16 @@ Activate Stack Perfeita in this project.
 
 1. Call `activate_project()`
 2. Call `get_model_profile("claude")` (or the active provider)
-3. Call `get_rules_bundle("index")`
-4. Call `get_project_state()`
-5. Work in adaptive terseness
-6. Before final code -> `validate_bad_code`
-7. Before new imports/assets -> `dependency_validate`
-8. Same failure twice -> HALT
-9. If foundation is rotten -> stop feature work and propose fixing the base first
+3. Call `activate_role("implementer", model="claude")`
+4. Call `start_task_contract(...)`
+5. Call `get_rules_bundle("index")`
+6. Call `get_project_state()`
+7. Work in adaptive terseness
+8. Record proof with `assert_step_evidence(...)`
+9. Before final code -> `validate_bad_code`
+10. Before new imports/assets -> `dependency_validate`
+11. Same failure twice -> HALT
+12. If foundation is rotten -> stop feature work and propose fixing the base first
 ```
 
 ---
@@ -29,8 +32,10 @@ Resume this project with Stack Perfeita.
 2. Call `get_project_state()`
 3. Call `list_checkpoints()`
 4. If needed, call `resume_task()`
-5. Load only the rule needed for the current task
-6. Continue from the last proven step
+5. Re-activate the role with `activate_role(...)`
+6. Re-open the task with `start_task_contract(...)`
+7. Load only the rule needed for the current task
+8. Continue from the last proven step
 ```
 
 ---
@@ -46,6 +51,7 @@ Reinforce Stack Perfeita essentials.
 - Validate final code with `validate_bad_code`
 - Validate new imports/assets with `dependency_validate`
 - Validate long prose with `validate_response_style`
+- Record proof with `assert_step_evidence(...)`
 - Do not invent APIs, files, or behavior
 - Continue exactly from the last valid step
 ```
@@ -71,11 +77,12 @@ CAVEMAN MODE: ACTIVE.
 ```text
 Compact context now.
 
-1. Save current state with `compact_conversation_state()`
-2. Use `compact_logs()` for long logs
-3. Use `compact_diff()` for long diffs
-4. If this is a stable milestone, promote it with `promote_summary_to_checkpoint()`
-5. Drop verbose failed attempts from active context
+1. Save current state with `compact_conversation_state()` when needed
+2. Project state now auto-compacts by threshold on save
+3. Use `compact_logs()` for long logs
+4. Use `compact_diff()` for long diffs
+5. If this is a stable milestone, promote it with `promote_summary_to_checkpoint()`
+6. Drop verbose failed attempts from active context
 ```
 
 ---

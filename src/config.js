@@ -27,6 +27,12 @@ const STATE_LIMITS = {
   maxCheckpoints: 20,
   maxCompactionHistory: 30,
   maxObservations: 100,
+  autoCompactThresholdChars: 4000,
+  autoCompactHardThresholdChars: 7000,
+  autoCompactKeepRecentItems: 12,
+  autoCompactKeepHardCapItems: 6,
+  autoCompactMaxEntryChars: 220,
+  autoCompactMaxScalarChars: 480,
 };
 
 const TOPIC_MAP = {

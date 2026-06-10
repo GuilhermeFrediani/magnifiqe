@@ -5,8 +5,10 @@ Use Stack Perfeita as runtime discipline for this project.
 ## SESSION START
 1. Call `activate_project()`
 2. Call `get_model_profile("claude")` or the active provider
-3. Call `get_rules_bundle("index")`
-4. Call `get_project_state()`
+3. Call `activate_role("implementer", model="claude")`
+4. Call `start_task_contract(...)`
+5. Call `get_rules_bundle("index")`
+6. Call `get_project_state()`
 
 ## OPERATING MODE
 - Adaptive terseness by default
@@ -18,5 +20,7 @@ Use Stack Perfeita as runtime discipline for this project.
 Before shipping code or claiming success:
 - Run `validate_bad_code` for code blocks
 - Run `dependency_validate` when new imports/assets were introduced
+- Record proof with `assert_step_evidence(...)` at meaningful milestones
 - Run `validate_response_style` before long explanatory prose when needed
+- Project state auto-compacts by threshold on save
 - If foundation is rotten, stop feature work and fix the base first

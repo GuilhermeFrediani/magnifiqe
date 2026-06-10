@@ -10,6 +10,7 @@ import { BAD_PATTERNS, RESPONSE_STYLE_PATTERNS } from "./config.js";
 import { readFile } from "./helpers.js";
 import { rateLimiter } from "./rate-limiter.js";
 import { analyzeCodeMetrics } from "./code-reading.js";
+import { validateFileDependencies } from "./dependency-resolution.js";
 
 const NODE_BUILTINS = new Set([
   "assert", "async_hooks", "buffer", "child_process", "cluster", "console",
@@ -295,7 +296,7 @@ export function registerValidatorsTools(server) {
 
   server.tool(
     "dependency_validate",
-    "Fast-path validator for imports and asset references. Checks relative imports, node_modules, Node built-ins, common tsconfig aliases, and local HTML assets. Use to catch hallucinated references before claiming a module exists.",
+    "Fast-path validator for imports and asset references. Checks relative imports, workspace packages, package exports, node_modules, tsconfig/jsconfig aliases, Vite aliases, and local HTML assets. Use to catch hallucinated references before claiming a module exists.",
     { file_path: z.string().describe("Absolute path to the file to validate dependencies for.") },
     async ({ file_path }) => {
       const rateLimitHit = rateLimiter.check("dependency_validate");
@@ -313,122 +314,20 @@ export function registerValidatorsTools(server) {
         return { content: [{ type: "text", text: `HALT — Cannot read file: ${absPath}` }] };
       }
 
-      const fileDir = dirname(absPath);
-      const missing = new Set();
-
-      let projectRoot = fileDir;
-      for (let i = 0; i < 10; i++) {
-        if (existsSync(join(projectRoot, "package.json"))) break;
-        const parent = dirname(projectRoot);
-        if (parent === projectRoot) break;
-        projectRoot = parent;
-      }
-
-      const tsconfigPaths = {};
-      const tsconfigPath = join(projectRoot, "tsconfig.json");
-      if (existsSync(tsconfigPath)) {
-        try {
-          const tsconfig = JSON.parse(readFile(tsconfigPath));
-          const paths = tsconfig?.compilerOptions?.paths || {};
-          for (const [alias, targets] of Object.entries(paths)) {
-            const cleanAlias = alias.replace("/*", "");
-            const firstTarget = Array.isArray(targets) ? targets[0] : targets;
-            const target = String(firstTarget).replace("/*", "");
-            tsconfigPaths[cleanAlias] = resolve(projectRoot, tsconfig?.compilerOptions?.baseUrl || ".", target);
-          }
-        } catch {
-          // ignore malformed tsconfig
-        }
-      }
-
-      const EXTENSIONS = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".json"];
-
-      function candidateExists(basePath) {
-        const candidates = [basePath];
-        for (const ext of EXTENSIONS) candidates.push(basePath + ext);
-        candidates.push(join(basePath, "index.js"), join(basePath, "index.ts"), join(basePath, "index.tsx"));
-        return candidates.some((candidate) => existsSync(candidate));
-      }
-
-      function resolveImport(importPath) {
-        if (importPath.startsWith(".")) {
-          return candidateExists(resolve(fileDir, importPath));
-        }
-
-        if (NODE_BUILTINS.has(importPath) || NODE_BUILTINS.has(importPath.split("/")[0])) {
-          return true;
-        }
-
-        for (const [alias, targetDir] of Object.entries(tsconfigPaths)) {
-          if (importPath === alias || importPath.startsWith(alias + "/")) {
-            const rest = importPath === alias ? "" : importPath.slice(alias.length + 1);
-            return candidateExists(rest ? resolve(targetDir, rest) : targetDir);
-          }
-        }
-
-        if (importPath.startsWith("~/")) {
-          return candidateExists(resolve(projectRoot, importPath.slice(2)));
-        }
-
-        const pkgName = importPath.startsWith("@")
-          ? importPath.split("/").slice(0, 2).join("/")
-          : importPath.split("/")[0];
-        return existsSync(join(projectRoot, "node_modules", pkgName));
-      }
-
-      const importRegex = /import\s+(?:[\w{},*\s]+\s+from\s+)?['"]([^'"]+)['"]/g;
-      let match;
-      while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        if (!resolveImport(importPath)) missing.add(`import \"${importPath}\"`);
-      }
-
-      const requireRegex = /require\(\s*['"]([^'"]+)['"]\s*\)/g;
-      while ((match = requireRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        if (!resolveImport(importPath)) missing.add(`require(\"${importPath}\")`);
-      }
-
-      const dynamicImportRegex = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
-      while ((match = dynamicImportRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        if (!resolveImport(importPath)) missing.add(`import(\"${importPath}\")`);
-      }
-
-      // HTML: <script src="x"> and <link href="x">
-      const scriptRegex = /<script\s+[^>]*src=['"]([^'"]+)['"]/g;
-      while ((match = scriptRegex.exec(content)) !== null) {
-        const src = match[1];
-        if (!src.startsWith("http") && !src.startsWith("//") && !existsSync(resolve(fileDir, src))) {
-          missing.add(`<script src=\"${src}\">`);
-        }
-      }
-
-      const linkRegex = /<link\s+[^>]*href=['"]([^'"]+\.css)['"]/g;
-      while ((match = linkRegex.exec(content)) !== null) {
-        const href = match[1];
-        if (!href.startsWith("http") && !href.startsWith("//") && !existsSync(resolve(fileDir, href))) {
-          missing.add(`<link href=\"${href}\">`);
-        }
-      }
-
-      if (missing.size > 0) {
+      const report = validateFileDependencies(absPath, content);
+      if (!report.ok) {
         return {
           content: [{
             type: "text",
-            text: `HALT — ${missing.size} missing reference(s):\n\n${[...missing].map((item) => `- ${item}`).join("\n")}\n\nPossible hallucinated import/reference. Checked: relative paths, node_modules, tsconfig aliases (${Object.keys(tsconfigPaths).length}), Node built-ins, HTML assets.`,
+            text: `HALT — ${report.missing.length} missing reference(s):\n\n${report.missing.map((item) => `- ${item.label} [via=${item.via}]`).join("\n")}\n\nChecked: relative paths, workspace packages (${report.stats.workspaces}), package exports, node_modules, tsconfig/jsconfig + Vite aliases (${report.stats.aliases}), baseUrl roots (${report.stats.baseDirs}), Node built-ins, HTML assets.`,
           }],
         };
       }
 
-      const aliasInfo = Object.keys(tsconfigPaths).length > 0
-        ? ` (${Object.keys(tsconfigPaths).length} tsconfig aliases loaded)`
-        : "";
-
       return {
         content: [{
           type: "text",
-          text: `PASS — All imports and local asset references resolved${aliasInfo}. Checked: relative paths, node_modules, tsconfig aliases, Node built-ins, HTML assets.`,
+          text: `PASS — All imports and local asset references resolved. Checked: relative paths, workspace packages (${report.stats.workspaces}), package exports, node_modules, tsconfig/jsconfig + Vite aliases (${report.stats.aliases}), baseUrl roots (${report.stats.baseDirs}), Node built-ins, HTML assets.`,
         }],
       };
     }
