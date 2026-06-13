@@ -158,7 +158,6 @@ export function registerActivationTools(server) {
       const stateLines = [
         `- Objective: ${state.objective || "(not set)"}`,
         `- Checkpoints: ${state.checkpoints?.length || 0}`,
-        `- Auto compactions: ${state.compaction_meta?.auto_compactions || 0}`,
       ];
       if (state.next_steps?.length) stateLines.push(`- Next steps: ${state.next_steps.join(", ")}`);
       if (state.decisions?.length) stateLines.push(`- Recent decisions: ${state.decisions.slice(-3).join(", ")}`);
@@ -184,20 +183,14 @@ export function registerActivationTools(server) {
         "",
         "### Recommended sequence",
         "- Call get_model_profile(<provider>) once",
-        "- Call activate_role(<role>, model=<provider>) for task posture",
-        "- Start a task contract with start_task_contract(...) before major work",
-        "- For high-blast-radius or ambiguous work: call council_gate(...) and start_council_session(...) when recommended",
         "- Call get_rules_bundle('index') as stable prefix",
         "- Load only the rule needed with get_rules(topic)",
         "- Use list_checkpoints() before resume_task(label) when resuming older work",
-        "- Record proof with assert_step_evidence(...) at meaningful milestones",
         "- Before final code: validate_bad_code; before final prose: validate_response_style",
-        "- dependency_validate now covers workspaces, package exports, ts/jsconfig paths, and Vite aliases",
         "",
         "### Cache strategy",
         "- Static: rules bundle, model profile, stable project manifest",
         "- Volatile: project state, observations, diffs, logs",
-        "- Project state auto-compacts at threshold to preserve recent high-signal context",
         "- Prefer compaction for logs/diffs instead of carrying raw output forward",
       ];
 

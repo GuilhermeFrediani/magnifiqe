@@ -64,6 +64,8 @@ describe('MCP stdio E2E', () => {
     assert.ok(toolNames.includes('activate_role'));
     assert.ok(toolNames.includes('start_task_contract'));
     assert.ok(toolNames.includes('assert_step_evidence'));
+    assert.ok(toolNames.includes('start_council_session'));
+    assert.ok(toolNames.includes('synthesize_council'));
 
     child.kill('SIGTERM');
   });

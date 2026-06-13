@@ -1,7 +1,7 @@
 {
   "name": "stack-perfeita-mcp",
-  "version": "4.4.0",
-  "description": "MCP server that disciplines coding agents with validation, state checkpoints, context control, and real council deliberation.",
+  "version": "4.1.0",
+  "description": "MCP server that disciplines coding agents with validation, state checkpoints, and context control.",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -34,7 +34,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@babel/parser": "^7.29.7",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "acorn": "^8.16.0",
     "acorn-loose": "^8.5.2",

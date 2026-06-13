@@ -21,19 +21,12 @@ const SKILLS_DIR = resolve(PROJECT_ROOT, ".claude/skills");
 const COMMANDS_DIR = resolve(RULES_DIR, "commands");
 const MEMORY_FILE = resolve(PROJECT_ROOT, ".claude", "session_memory.json");
 const PROJECT_STATE_FILE = resolve(PROJECT_ROOT, ".claude", "project_state.json");
-const COUNCIL_STATE_FILE = resolve(PROJECT_ROOT, ".claude", "council_state.json");
 
 const STATE_LIMITS = {
   maxArrayItems: 50,
   maxCheckpoints: 20,
   maxCompactionHistory: 30,
   maxObservations: 100,
-  autoCompactThresholdChars: 4000,
-  autoCompactHardThresholdChars: 7000,
-  autoCompactKeepRecentItems: 12,
-  autoCompactKeepHardCapItems: 6,
-  autoCompactMaxEntryChars: 220,
-  autoCompactMaxScalarChars: 480,
 };
 
 const TOPIC_MAP = {
@@ -72,17 +65,13 @@ const TOPIC_MAP = {
   "hesitation":   "10-llm-behavioral-rules.md",
   "systematic":   "11-systematic-debugging.md",
   "debug-method": "11-systematic-debugging.md",
-  "council":      "12-council-deliberation.md",
-  "deliberation": "12-council-deliberation.md",
-  "arbiter":      "12-council-deliberation.md",
-  "peer-review":  "12-council-deliberation.md",
 };
 
 const RULE_DESCRIPTIONS = {
   "00-project-overview.md":         "Project domain, stack, and non-functional requirements",
   "01-ai-workflow-strict.md":       "AI workflow rules — anti-hallucination, P.E.R., zero-loop",
   "02-coding-standards.md":         "Caveman style — naming, variables, loops, functions",
-  "03-token-economy.md":            "Token compression — block filler, semantic compaction",
+  "03-token-economy.md":            "Token compression — block filler, semantic summarization",
   "04-security-secrets.md":         "OWASP 2025/2026, secrets management, agentic risks",
   "05-debugging-mastery.md":        "Structured debugging — no blind logs, reproduce-reduce-prove",
   "06-ci-cd-testing.md":            "CI/CD as product — pipeline gates, SAST, coverage",
@@ -91,7 +80,6 @@ const RULE_DESCRIPTIONS = {
   "09-bad-patterns-halt.md":        "Bad code blacklist — halt on rotten foundation",
   "10-llm-behavioral-rules.md":     "Universal LLM rules — excitation blocking, global behavior",
   "11-systematic-debugging.md":     "4-phase systematic debugging — root cause, hypothesis, fix, verify",
-  "12-council-deliberation.md":     "Multi-bot council deliberation — gate, peer review, synthesis, anti-theater rules",
 };
 
 const BAD_PATTERNS = [
@@ -102,10 +90,6 @@ const BAD_PATTERNS = [
   { regex: /function\s+\w+[^{]{200,}/,            id: "god-function",   msg: "Large function signature/body hint — split responsibilities", severity: "warning" },
   { regex: /if.*if.*if.*if/,                       id: "arrow-code",     msg: "Deep conditional nesting — use early returns or guard clauses", severity: "warning" },
   { regex: /innerHTML\s*=/,                        id: "innerhtml",      msg: "Unsafe innerHTML — use textContent, template sanitization, or DOM APIs", severity: "blocker" },
-  { regex: /dangerouslySetInnerHTML\s*=/,          id: "dangerous-react-html", msg: "dangerouslySetInnerHTML detected — sanitize or avoid raw HTML injection", lang: "js", severity: "blocker" },
-  { regex: /\bfetch\s*\([\s\S]{0,240}\)(?![\s\S]{0,80}(signal|timeout))/, id: "fetch-no-timeout", msg: "fetch without timeout/abort signal hint — prefer AbortController or explicit timeout policy", lang: "js", severity: "warning" },
-  { regex: /\b(exec|execSync)\s*\(/,             id: "child-process-exec", msg: "child_process exec detected — validate input, prefer execFile/spawn, avoid shell interpolation", lang: "js", severity: "warning" },
-  { regex: /\blocalStorage\.(setItem|getItem)\(\s*["'`](token|auth|jwt|session|refresh)/i, id: "sensitive-localstorage", msg: "Sensitive token stored in localStorage — prefer httpOnly cookies or safer storage boundary", lang: "js", severity: "warning" },
   { regex: /\bvar\s+/,                             id: "var",            msg: "var detected — prefer const/let", lang: "js", severity: "advisory" },
   { regex: /[^=!]==[^=]/,                          id: "weak-eq",        msg: "Weak comparison == — use === unless coercion is deliberate", lang: "js", severity: "warning" },
   { regex: /\/\/\s*(TODO|FIXME)/i,                 id: "todo-inline",    msg: "Inline TODO/FIXME — resolve now or track externally", severity: "advisory" },
@@ -134,7 +118,6 @@ export {
   COMMANDS_DIR,
   MEMORY_FILE,
   PROJECT_STATE_FILE,
-  COUNCIL_STATE_FILE,
   STATE_LIMITS,
   TOPIC_MAP,
   RULE_DESCRIPTIONS,
