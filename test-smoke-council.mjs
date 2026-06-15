@@ -69,7 +69,7 @@ async function main() {
   const start = await callTool('start_council_session', {
     objective: 'Adicionar council deliberation no MCP com implementação real e sem teatro',
     context: 'Repo Stack Perfeita MCP com state, validation e role activation já existentes',
-    desired_output: 'Sistema testado com gate, sessão, peer review e síntese',
+    desired_output: 'Sistema testado com gate, sessão, peer review, chairman e síntese',
     constraints: ['Sem loop infinito', 'Persistência local', 'Síntese auditável'],
     task_type: 'architecture-refactor',
     blast_radius: 'system',
@@ -88,6 +88,17 @@ async function main() {
   const sessionId = match[1].trim();
 
   const positions = {
+    contrarian: {
+      problem_frame: 'Precisamos de conflito útil, não de consenso decorativo.',
+      thesis: 'Adicionar um bot contrarian explícito antes da síntese.',
+      assumptions: ['Sem pressão contrária o council vira teatro'],
+      opportunities: ['Capturar riscos cedo'],
+      risks: ['Atrito excessivo se a crítica for vaga'],
+      next_steps: ['Criar bot contrarian', 'Exigir risco explícito por posição'],
+      evidence: 'O pedido exige revisão crítica real.',
+      confidence: 92,
+      tags: ['anti-theater', 'risk', 'auditability'],
+    },
     first_principles: {
       problem_frame: 'Precisamos de deliberação real, não personas decorativas.',
       thesis: 'Persistir sessões e exigir estrutura mínima por bot.',
@@ -101,11 +112,11 @@ async function main() {
     },
     expansionist: {
       problem_frame: 'A camada de council também pode melhorar a qualidade de decisões futuras.',
-      thesis: 'Adicionar gate heurístico, skill dedicada e documentação operacional.',
+      thesis: 'Adicionar gate heurístico, skill dedicada, docs e espelho markdown.',
       assumptions: ['Council deve ser opcional'],
-      opportunities: ['Auto-gate', 'Playbook reutilizável'],
+      opportunities: ['Auto-gate', 'Playbook reutilizável', 'AI docs'],
       risks: ['Virar default e pesar tarefas simples'],
-      next_steps: ['Criar council_gate', 'Adicionar skill'],
+      next_steps: ['Criar council_gate', 'Adicionar docs:ai'],
       evidence: 'Há ativação por roles e regras sob demanda.',
       confidence: 84,
       tags: ['deliberation', 'auto-gate', 'docs'],
@@ -123,7 +134,7 @@ async function main() {
     },
     executor: {
       problem_frame: 'A mudança precisa ser mínima e validada por teste real.',
-      thesis: 'Entregar módulo novo, testes, smoke test e pacote final.',
+      thesis: 'Entregar módulo novo, testes, smoke test, docs e export markdown.',
       assumptions: ['O padrão atual de módulos deve permanecer'],
       opportunities: ['Validação E2E'],
       risks: ['Quebra no startup do MCP'],
@@ -139,13 +150,15 @@ async function main() {
   }
 
   const reviews = [
-    ['first_principles', 'expansionist', 4, 4, 4, 4, 'support', 'Bom upside sem explodir escopo', ['auto-gate'], ['Documentar limites']],
-    ['first_principles', 'executor', 5, 3, 5, 4, 'support', 'Plano concreto e verificável', ['smoke test'], ['Incluir rollback']],
-    ['expansionist', 'first_principles', 5, 4, 4, 4, 'support', 'Base sólida e enxuta', ['persistência'], ['Pode destacar skill cedo']],
+    ['contrarian', 'first_principles', 5, 4, 4, 5, 'support', 'Boa base, precisa manter hipótese explícita', ['evidência estruturada'], ['Evitar abstração excessiva']],
+    ['contrarian', 'executor', 4, 3, 5, 5, 'support', 'Execução boa e verificável', ['smoke test'], ['Manter rollback visível']],
+    ['first_principles', 'contrarian', 5, 4, 4, 5, 'support', 'Pressão contrária útil e concreta', ['failure-mode analysis'], ['Evitar crítica vazia']],
+    ['first_principles', 'expansionist', 4, 5, 4, 4, 'support', 'Bom upside sem explodir escopo', ['markdown mirror'], ['Controlar scope creep']],
     ['expansionist', 'outsider', 4, 5, 4, 5, 'support', 'Ótimo anti-teatro', ['scorecard'], ['Schema pode pesar']],
+    ['expansionist', 'executor', 4, 4, 5, 4, 'support', 'Boa entrega incremental', ['validação'], ['Não pular docs']],
+    ['outsider', 'contrarian', 5, 4, 4, 5, 'support', 'Conflito útil, não cosmético', ['risk audit'], ['Faltar caminho seguro']],
     ['outsider', 'first_principles', 5, 4, 5, 4, 'support', 'Boa separação entre fundamentos e execução', ['evidência estruturada'], ['Mostrar conflitos']],
-    ['outsider', 'executor', 4, 3, 5, 4, 'mixed', 'Execução boa, mas depende da transparência do ranking', ['testes'], ['Scorecard transparente']],
-    ['executor', 'expansionist', 4, 4, 4, 3, 'support', 'Boa alavanca futura', ['skill'], ['Evitar always-on']],
+    ['executor', 'expansionist', 4, 4, 4, 3, 'support', 'Boa alavanca futura', ['AI docs'], ['Evitar always-on']],
     ['executor', 'outsider', 5, 5, 4, 5, 'support', 'Mais alinhado ao pedido de evitar teatro', ['peer review'], ['Nenhuma']],
   ];
 
@@ -168,9 +181,13 @@ async function main() {
   const synthesis = await callTool('synthesize_council', { session_id: sessionId });
   const synthesisText = synthesis.result.content[0].text;
 
+  if (!/Chairman Synthesis/.test(synthesisText)) {
+    throw new Error(`Unexpected synthesis output: ${synthesisText}`);
+  }
+
   console.log(JSON.stringify({
     sessionId,
-    synthesisPreview: synthesisText.split('\n').slice(0, 14),
+    synthesisPreview: synthesisText.split('\n').slice(0, 18),
   }, null, 2));
 
   child.kill('SIGTERM');

@@ -9,13 +9,34 @@ import { dirname, resolve } from "path";
 import { COUNCIL_STATE_FILE } from "./config.js";
 import { rateLimiter } from "./rate-limiter.js";
 
-const COUNCIL_BOT_ORDER = ["first_principles", "expansionist", "outsider", "executor"];
+const COUNCIL_BOT_ORDER = ["contrarian", "first_principles", "expansionist", "outsider", "executor"];
+const CHAIRMAN_LABEL = "The Chairman";
 const FAILURE_COST_VALUES = ["low", "medium", "high"];
 const BLAST_RADIUS_VALUES = ["local", "module", "system"];
 const MODE_VALUES = ["auto", "off", "standard", "full"];
 const REVIEW_VERDICTS = ["support", "mixed", "reject"];
 
 const COUNCIL_BOT_BRIEFS = {
+  contrarian: {
+    label: "The Contrarian",
+    mandate: "Stress-test the proposal, surface weak links, and expose hidden failure modes before the system commits.",
+    focus: [
+      "Attack unjustified leaps, optimistic assumptions, and thin evidence",
+      "Differentiate structural risk from cosmetic disagreement",
+      "Force the team to earn confidence instead of inheriting it",
+    ],
+    avoid: [
+      "Do not disagree for theater or ego",
+      "Do not block progress without naming a safer path",
+    ],
+    required_output: [
+      "problem_frame",
+      "thesis",
+      "assumptions[]",
+      "risks[]",
+      "next_steps[]",
+    ],
+  },
   first_principles: {
     label: "The First Principles Thinker",
     mandate: "Rebuild the solution from zero and separate fundamentals from inherited assumptions.",
@@ -129,7 +150,7 @@ function toTitleCaseBot(bot) {
 }
 
 function defaultReviewCounts(mode) {
-  return mode === "full" ? 8 : 4;
+  return mode === "full" ? 10 : 5;
 }
 
 function seedFromString(input) {
@@ -157,19 +178,22 @@ function seededShuffle(items, seedText) {
 
 function buildPeerReviewMatrix(mode, sessionId) {
   const standard = [
+    { reviewer_bot: "contrarian", target_bot: "executor" },
     { reviewer_bot: "first_principles", target_bot: "expansionist" },
     { reviewer_bot: "expansionist", target_bot: "outsider" },
-    { reviewer_bot: "outsider", target_bot: "executor" },
+    { reviewer_bot: "outsider", target_bot: "contrarian" },
     { reviewer_bot: "executor", target_bot: "first_principles" },
   ];
 
   const full = [
+    { reviewer_bot: "contrarian", target_bot: "first_principles" },
+    { reviewer_bot: "contrarian", target_bot: "executor" },
+    { reviewer_bot: "first_principles", target_bot: "contrarian" },
     { reviewer_bot: "first_principles", target_bot: "expansionist" },
-    { reviewer_bot: "first_principles", target_bot: "executor" },
-    { reviewer_bot: "expansionist", target_bot: "first_principles" },
     { reviewer_bot: "expansionist", target_bot: "outsider" },
+    { reviewer_bot: "expansionist", target_bot: "executor" },
+    { reviewer_bot: "outsider", target_bot: "contrarian" },
     { reviewer_bot: "outsider", target_bot: "first_principles" },
-    { reviewer_bot: "outsider", target_bot: "executor" },
     { reviewer_bot: "executor", target_bot: "expansionist" },
     { reviewer_bot: "executor", target_bot: "outsider" },
   ];
@@ -459,7 +483,7 @@ function collectConsensusTags(session) {
   return [...counts.values()]
     .filter((entry) => entry.count >= 2)
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-    .map((entry) => `${entry.label} (${entry.count}/4)`)
+    .map((entry) => `${entry.label} (${entry.count}/5)`)
     .slice(0, 6);
 }
 
@@ -547,8 +571,26 @@ function synthesizeCouncilSession(session) {
   const disagreements = deriveDisagreements(scorecard);
   const discarded_ideas = deriveDiscardedIdeas(scorecard);
   const recommended_next_step = leader?.next_steps?.[0] || "No next step proposed";
+  const lowEvidenceBots = COUNCIL_BOT_ORDER.filter((bot) => !normalizeText(session.positions?.[bot]?.evidence));
+  const unresolvedConcerns = normalizeList(scorecard.flatMap((entry) => entry.concerns || [])).slice(0, 6);
+  const evidence_missing = [];
+
+  if (lowEvidenceBots.length) {
+    evidence_missing.push(`Missing evidence fields: ${lowEvidenceBots.map(toTitleCaseBot).join(', ')}`);
+  }
+  if (scorecard.some((entry) => !entry.next_steps?.length)) {
+    evidence_missing.push("Some bot positions still lack concrete next steps.");
+  }
+  if (unresolvedConcerns.length) {
+    evidence_missing.push(`Open concerns to verify: ${unresolvedConcerns.join('; ')}`);
+  }
+  if (!evidence_missing.length) {
+    evidence_missing.push("No obvious evidence gaps recorded.");
+  }
+
   const synthesis = {
     session_id: session.session_id,
+    chairman: CHAIRMAN_LABEL,
     synthesized_at: new Date().toISOString(),
     confidence: deriveConfidence(scorecard, session),
     consensus: consensus_tags.length ? consensus_tags : ["No strong tag-level consensus; inspect scorecard"],
@@ -558,7 +600,7 @@ function synthesizeCouncilSession(session) {
     recommended_next_step,
     leading_bot: leader?.label || "n/a",
     scorecard,
-    evidence_missing: [],
+    evidence_missing,
   };
 
   session.synthesis = synthesis;
@@ -592,6 +634,7 @@ function formatSession(session) {
     const brief = COUNCIL_BOT_BRIEFS[bot];
     return `- ${brief.label}: ${brief.mandate}`;
   });
+  roleLines.push(`- ${CHAIRMAN_LABEL}: Synthesizes consensus, disagreements, discarded ideas, risk ranking, and the next recommended move.`);
 
   const reviewLines = session.peer_review_queue.map((item, index) => `${index + 1}. ${toTitleCaseBot(item.reviewer_bot)} -> ${toTitleCaseBot(item.target_bot)}`);
 
@@ -623,7 +666,8 @@ function formatSession(session) {
 
 function formatSynthesis(synthesis) {
   return [
-    `## Council Synthesis: ${synthesis.session_id}`,
+    `## Chairman Synthesis: ${synthesis.session_id}`,
+    `- Chairman: ${synthesis.chairman || CHAIRMAN_LABEL}`,
     `- Confidence: ${synthesis.confidence}`,
     `- Leading bot: ${synthesis.leading_bot}`,
     `- Recommended next step: ${synthesis.recommended_next_step}`,
@@ -639,6 +683,9 @@ function formatSynthesis(synthesis) {
     "",
     "### Risk ranking",
     ...synthesis.risk_ranking.map((item) => `- ${item}`),
+    "",
+    "### Evidence missing",
+    ...synthesis.evidence_missing.map((item) => `- ${item}`),
     "",
     "### Scorecard",
     ...synthesis.scorecard.map((entry, index) => `${index + 1}. ${entry.label} — score=${entry.weighted_score}; support=${entry.support_count}; mixed=${entry.mixed_count}; reject=${entry.reject_count}`),
@@ -680,7 +727,7 @@ export function registerCouncilTools(server) {
 
   server.tool(
     "start_council_session",
-    "Creates a persisted Council session with four bot briefs, shuffled peer-review queue, stop rules, and scoring rubric.",
+    "Creates a persisted Council session with five bot briefs, shuffled peer-review queue, stop rules, scoring rubric, and Chairman synthesis.",
     {
       objective: z.string().describe("The decision or implementation objective under deliberation."),
       context: z.string().describe("Relevant repo, architecture, bug, or product context."),

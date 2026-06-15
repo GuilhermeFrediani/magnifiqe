@@ -10,3 +10,5 @@ Thumbs.db
 .claude/session_memory.json
 .claude/project_state.json
 .claude_test/
+.claude/council_state.json
+ai-docs/.cache/

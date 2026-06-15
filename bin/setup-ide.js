@@ -35,6 +35,7 @@ Use Stack Perfeita as runtime discipline for this project.
 2. Call \`get_model_profile("claude")\` or the active provider
 3. Call \`get_rules_bundle("index")\`
 4. Call \`get_project_state()\`
+5. For ambiguous or high-blast work: call \`council_gate(...)\` and start a Council session when recommended
 
 ## OPERATING MODE
 - Adaptive terseness by default
@@ -48,6 +49,7 @@ Before shipping code or claiming success:
 - Run \`dependency_validate\` when new imports/assets were introduced
 - Run \`validate_response_style\` before long explanatory prose when needed
 - If foundation is rotten, stop feature work and fix the base first
+- Prefer npm run docs:ai to generate the Markdown mirror before long AI/code-review sessions
 `;
 
 const OPENCODE_CONFIG = {
@@ -58,7 +60,8 @@ const OPENCODE_CONFIG = {
     "./ai-rules/03-token-economy.md",
     "./ai-rules/05-debugging-mastery.md",
     "./ai-rules/10-llm-behavioral-rules.md",
-    "./ai-rules/11-systematic-debugging.md"
+    "./ai-rules/11-systematic-debugging.md",
+    "./ai-rules/12-council-deliberation.md"
   ],
   "mcp": {
     "stack-perfeita": {
@@ -156,3 +159,4 @@ if (BOOTSTRAP) {
   console.log('- Bootstrap mode: starter ai-rules and skills copied');
 }
 console.log('- MCP server command for IDEs: npx stack-perfeita-mcp --rules-dir ./ai-rules');
+console.log('- Optional AI docs build: npm run docs:ai');

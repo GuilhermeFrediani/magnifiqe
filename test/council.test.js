@@ -49,6 +49,19 @@ function makeSession(mode = 'full') {
 
 function fillAllPositions(session) {
   upsertCouncilPosition(session, {
+    bot: 'contrarian',
+    problem_frame: 'The danger is shipping a decorative council with no real disagreement pressure.',
+    thesis: 'Force explicit failure-mode analysis before synthesis.',
+    assumptions: ['Most bad councils fail by fake consensus'],
+    opportunities: ['Catch design drift earlier'],
+    risks: ['Too much friction if objections are vague'],
+    next_steps: ['Require contrarian evidence', 'Block synthesis without peer review'],
+    evidence: 'The protocol explicitly targets anti-theater behavior.',
+    confidence: 91,
+    tags: ['anti-theater', 'risk', 'auditability'],
+  });
+
+  upsertCouncilPosition(session, {
     bot: 'first_principles',
     problem_frame: 'The system needs real divergence and auditability.',
     thesis: 'Create persisted sessions and structured evidence.',
@@ -64,9 +77,9 @@ function fillAllPositions(session) {
   upsertCouncilPosition(session, {
     bot: 'expansionist',
     problem_frame: 'The feature can also improve role orchestration.',
-    thesis: 'Add gate heuristics, peer review, and reusable skill docs.',
+    thesis: 'Add gate heuristics, peer review, reusable docs, and AI-first markdown traces.',
     assumptions: ['Users will want optional activation'],
-    opportunities: ['Auto-gating', 'Reusable skill'],
+    opportunities: ['Auto-gate', 'Reusable skill', 'Markdown mirror'],
     risks: ['Scope creep if always-on'],
     next_steps: ['Add council gate', 'Document peer review flow'],
     evidence: 'README already emphasizes activation and role posture.',
@@ -90,11 +103,11 @@ function fillAllPositions(session) {
   upsertCouncilPosition(session, {
     bot: 'executor',
     problem_frame: 'The repo needs a minimal invasive implementation plan.',
-    thesis: 'Ship one module, tests, docs, and end-to-end validation.',
+    thesis: 'Ship one module, tests, docs, smoke validation, and markdown export.',
     assumptions: ['Current module registration pattern should remain intact'],
     opportunities: ['Keep implementation surgical'],
     risks: ['Broken tool registration would regress MCP startup'],
-    next_steps: ['Register council tools', 'Run npm test'],
+    next_steps: ['Register council tools', 'Run npm test', 'Run smoke test'],
     evidence: 'index.js already registers each module in one place.',
     confidence: 93,
     tags: ['implementation', 'testing', 'deliberation'],
@@ -103,13 +116,15 @@ function fillAllPositions(session) {
 
 function fillAllReviews(session) {
   const reviews = [
-    ['first_principles', 'expansionist', 4, 4, 4, 4, 'support', 'Good upside with bounded scope', ['auto-gate'], ['Document scope limits']],
-    ['first_principles', 'executor', 5, 3, 5, 4, 'support', 'Execution posture is grounded', ['run npm test'], ['Need stronger rollback note']],
-    ['expansionist', 'first_principles', 5, 4, 4, 4, 'support', 'Strong foundation and constraints', ['persist sessions'], ['Could surface docs earlier']],
+    ['contrarian', 'first_principles', 5, 4, 4, 5, 'support', 'Strong fundamentals, but keep assumptions visible', ['structured evidence'], ['Guard against abstraction drift']],
+    ['contrarian', 'executor', 4, 3, 5, 5, 'support', 'Execution is grounded and test-aware', ['smoke test'], ['Keep rollback visible']],
+    ['first_principles', 'contrarian', 5, 4, 4, 5, 'support', 'Useful pressure on false certainty', ['failure-mode analysis'], ['Avoid generic negativity']],
+    ['first_principles', 'expansionist', 4, 5, 4, 4, 'support', 'Good upside with bounded scope', ['markdown mirror'], ['Watch scope creep']],
     ['expansionist', 'outsider', 4, 5, 4, 5, 'support', 'Excellent anti-theater framing', ['deterministic scoring'], ['Schema weight']],
+    ['expansionist', 'executor', 4, 4, 5, 4, 'support', 'Implementation posture keeps momentum', ['validation'], ['Do not skip docs']],
+    ['outsider', 'contrarian', 5, 4, 4, 5, 'support', 'The objection layer is earned, not decorative', ['risk audit'], ['Need a safer-path clause']],
     ['outsider', 'first_principles', 5, 4, 5, 4, 'support', 'Properly separates fundamentals', ['structured evidence'], ['Need visible disagreement output']],
-    ['outsider', 'executor', 4, 3, 5, 4, 'mixed', 'Good plan but ensure the synthesis is real', ['tests'], ['Scorecard transparency']],
-    ['executor', 'expansionist', 4, 4, 4, 3, 'support', 'Useful additional leverage', ['skill docs'], ['Avoid automatic always-on mode']],
+    ['executor', 'expansionist', 4, 4, 4, 3, 'support', 'Useful leverage without breaking scope', ['AI-first docs'], ['Avoid always-on mode']],
     ['executor', 'outsider', 5, 5, 4, 5, 'support', 'Most aligned with anti-theater requirement', ['peer review'], ['None']],
   ];
 
@@ -158,10 +173,11 @@ describe('council runtime', () => {
     const loaded = loadCouncilState(TEST_FILE);
     assert.strictEqual(loaded.sessions.length, 1);
     assert.strictEqual(loaded.sessions[0].objective, 'Implement Council');
-    assert.strictEqual(loaded.sessions[0].peer_review_queue.length, 4);
+    assert.strictEqual(loaded.sessions[0].peer_review_queue.length, 5);
+    assert.strictEqual(loaded.sessions[0].role_order.length, 5);
   });
 
-  it('synthesizes a ranked recommendation from positions and reviews', () => {
+  it('synthesizes a ranked recommendation from positions and reviews with chairman output', () => {
     const session = makeSession('full');
     fillAllPositions(session);
     fillAllReviews(session);
@@ -169,10 +185,12 @@ describe('council runtime', () => {
     const synthesis = synthesizeCouncilSession(session);
 
     assert.strictEqual(session.status, 'synthesized');
+    assert.strictEqual(synthesis.chairman, 'The Chairman');
     assert.ok(['high', 'medium'].includes(synthesis.confidence));
-    assert.ok(synthesis.consensus.some((item) => item.includes('deliberation')));
+    assert.ok(synthesis.consensus.some((item) => item.includes('anti-theater') || item.includes('auditability') || item.includes('deliberation')));
     assert.ok(synthesis.recommended_next_step.length > 0);
-    assert.strictEqual(synthesis.scorecard.length, 4);
+    assert.strictEqual(synthesis.scorecard.length, 5);
+    assert.ok(Array.isArray(synthesis.evidence_missing));
     assert.ok(synthesis.scorecard[0].weighted_score >= synthesis.scorecard[1].weighted_score);
   });
 });

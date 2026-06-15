@@ -1,0 +1,67 @@
+# AI Docs Compact Index
+
+> Start here first. Low-token map of the repository.
+
+- `src/activation.js` — js; 210 lines; Stack Perfeita MCP — Project Activation activate_project MCP tool registration. Builds a complete project manifest: stack, rules, skills, state, fingerprint.
+- `src/code-reading.js` — js; 617 lines; Stack Perfeita MCP — Code Reading tools smart_outline, smart_unfold, smart_read MCP tool registrations. Babel parser first, acorn-loose fallback, regex last.
+- `src/commands.js` — js; 40 lines; Stack Perfeita MCP — Command tool run_command MCP tool registration.
+- `src/compaction.js` — js; 214 lines; Stack Perfeita MCP — Compaction tools compact_conversation_state, compact_logs, compact_diff, promote_summary_to_checkpoint Semantic compaction for long sessions: preserve meaning, discard noise.
+- `src/config.js` — js; 144 lines; Stack Perfeita MCP — Configuration All constants, topic maps, rule descriptions, response-style rules, and bad-code patterns.
+- `src/council.js` — js; 947 lines; Stack Perfeita MCP — Council deliberation runtime Real multi-perspective workflow with persisted sessions, peer review, and deterministic synthesis.
+- `src/dependency-resolution.js` — js; 726 lines; Stack Perfeita MCP — Dependency resolution helpers Monorepo/workspace-aware import and asset validation.
+- `src/helpers.js` — js; 95 lines; Stack Perfeita MCP — Helper utilities File reading, path safety, token minification, rule file listing.
+- `src/index.js` — js; 123 lines; stack-perfeita-mcp v4.5.0 MCP server that exposes project AI rules as tools for any IDE/agent. Architecture: Modular — each tool category lives in its own file under src/. This file is the entry point: it wires everything together and starts the server. Usage: node src/index.js --rules-dir /path/to/ai-rules
+- `src/memory.js` — js; 85 lines; Stack Perfeita MCP — Memory tools save_observation, search_observations. Uses JSON file persistence with simple dedupe + trimming.
+- `src/profiles.js` — js; 236 lines; Stack Perfeita MCP — Model Profiles get_model_profile MCP tool registration. Adapts behavior by provider family and operational capability profile.
+- `src/project-state.js` — js; 338 lines; Stack Perfeita MCP — Project State tools get_project_state, save_project_state, checkpoint_task, list_checkpoints, resume_task
+- `src/rate-limiter.js` — js; 26 lines; Stack Perfeita MCP — Rate Limiter Prevents tool call loops by enforcing a max-calls-per-window policy.
+- `src/resources.js` — js; 49 lines; Stack Perfeita MCP — MCP Resource registrations Exposes ai-rules/*.md as MCP resources for discovery and reading.
+- `src/roles.js` — js; 178 lines; Stack Perfeita MCP — Role activation activate_role MCP tool registration. Applies role-specific scaffolding adapted by model capability profile.
+- `src/rules.js` — js; 194 lines; Stack Perfeita MCP — Rules tools list_rules, get_rules, get_context MCP tool registrations.
+- `src/skills.js` — js; 102 lines; Stack Perfeita MCP — Skills tools list_skills and get_skill MCP tool registrations.
+- `src/state-compaction.js` — js; 189 lines; Stack Perfeita MCP — Automatic project state compaction Predictable trimming when state grows beyond configured thresholds.
+- `src/task-runtime.js` — js; 145 lines; Stack Perfeita MCP — Task runtime start_task_contract and assert_step_evidence MCP tool registrations.
+- `src/validators.js` — js; 338 lines; Stack Perfeita MCP — Validator tools validate_bad_code, validate_response_style, validate_git_commit, dependency_validate.
+- `ai-rules/00-project-overview.md` — md; 42 lines; 00 - Project Overview & Stack Manifest (The Domain Map)
+- `ai-rules/01-ai-workflow-strict.md` — md; 45 lines; AIPIHKAL Protocol: Strict Workflow for Real Tasks
+- `ai-rules/02-coding-standards.md` — md; 62 lines; 02 - Coding Standards (O Estilo Caveman)
+- `ai-rules/03-token-economy.md` — md; 41 lines; 03 - Token Economy & Context Management (2026)
+- `ai-rules/04-security-secrets.md` — md; 36 lines; 04 - Segurança Moderna e OWASP (2025/2026)
+- `ai-rules/05-debugging-mastery.md` — md; 50 lines; 05 - Debugging Mastery (Anti-Guesswork for JS/TS)
+- `ai-rules/06-ci-cd-testing.md` — md; 51 lines; 06 - CI/CD Moderno: Pipeline como Produto (2026)
+- `ai-rules/07-frontend-semantic.md` — md; 56 lines; 07 - Frontend Semântico e Acessibilidade (2026)
+- `ai-rules/08-backend-architecture.md` — md; 41 lines; 08 - Arquitetura de Produção e Backend Semântico (2026)
+- `ai-rules/09-bad-patterns-halt.md` — md; 55 lines; 09 - Fundações Podres e Padrões Ruins (Halt no Bad Code)
+- `ai-rules/10-llm-behavioral-rules.md` — md; 58 lines; 10 - Universal Behavioral Rules for LLMs
+- `ai-rules/11-systematic-debugging.md` — md; 30 lines; 11 - Systematic Debugging (O Método de 4 Fases)
+- `ai-rules/12-council-deliberation.md` — md; 86 lines; Council Deliberation Protocol
+- `ai-rules/commands/code-analysis.md` — md; 11 lines; Code Analysis Command
+- `bin/setup-ide.js` — js; 163 lines; stack-perfeita setup script Generates IDE configuration files and can bootstrap starter rules/skills. Usage: stack-perfeita                 # Generate IDE config files only stack-perfeita init            # Generate configs + starter ai-rules + starter skills stack-perfeita --bootstrap     # Same as init stack-perfeita --minimal       # Only .cursorrules stack-perfeita --force         # Overwrite existing files
+- `test/activation.test.js` — js; 25 lines; Test suite for src/activation.js Tests: module loads, registerActivationTools is a function
+- `test/code-reading-phase2.test.js` — js; 60 lines; No inline summary detected
+- `test/code-reading.test.js` — js; 182 lines; Test suite for src/code-reading.js Tests: extractSymbols, getFileLang
+- `test/compaction.test.js` — js; 96 lines; Test suite for src/compaction.js Tests: extractErrorsFromLogs, summarizeDiff
+- `test/config.test.js` — js; 130 lines; Test suite for src/config.js Tests: TOPIC_MAP coverage, RULE_DESCRIPTIONS keys, BAD_PATTERNS structure
+- `test/council.test.js` — js; 197 lines; No inline summary detected
+- `test/dependency-resolution.test.js` — js; 110 lines; No inline summary detected
+- `test/e2e-stdio.test.js` — js; 73 lines; No inline summary detected
+- `test/helpers.test.js` — js; 90 lines; Test suite for src/helpers.js
+- `test/memory.test.js` — js; 107 lines; Test suite for src/memory.js Tests: memory file I/O, observation format, search logic
+- `test/profiles.test.js` — js; 48 lines; Test suite for src/profiles.js
+- `test/project-state.test.js` — js; 122 lines; Test suite for src/project-state.js using the real implementation.
+- `test/rate-limiter.test.js` — js; 62 lines; Test suite for src/rate-limiter.js Tests: rate limit check, window reset
+- `test/roles.test.js` — js; 52 lines; No inline summary detected
+- `test/skills.test.js` — js; 133 lines; Test suite for src/skills.js Tests: skill file structure, frontmatter parsing logic
+- `test/state-compaction.test.js` — js; 94 lines; No inline summary detected
+- `test/task-runtime.test.js` — js; 55 lines; No inline summary detected
+- `test/validators.test.js` — js; 206 lines; Test suite for validator internals
+- `.claude/skills/build-test-verify/SKILL.md` — md; 25 lines; Verificação de Build e Testes (Build-Test-Verify)
+- `.claude/skills/core-conventions/SKILL.md` — md; 30 lines; Convenções de Código (Core Conventions)
+- `.claude/skills/council-deliberation/SKILL.md` — md; 45 lines; Council Deliberation
+- `.claude/skills/create-pull-request/SKILL.md` — md; 43 lines; Criação de Pull Request
+- `.claude/skills/git-commit/SKILL.md` — md; 40 lines; Criação de Commits (Git-Commit)
+- `.claude/skills/self-review-checklist/SKILL.md` — md; 28 lines; Checklist de Auto-Revisão (Self-Review)
+- `README.md` — md; 273 lines; [Stack Perfeita MCP](https://github.com/GuilhermeFrediani/magnifiqe)
+- `PROMPTS.md` — md; 100 lines; Core Prompts: Stack Perfeita
+- `package.json` — json; 56 lines; No inline summary detected
+- `opencode.json` — json; 27 lines; No inline summary detected

@@ -1,7 +1,7 @@
 {
   "name": "stack-perfeita-mcp",
-  "version": "4.4.0",
-  "description": "MCP server that disciplines coding agents with validation, state checkpoints, context control, and real council deliberation.",
+  "version": "4.5.0",
+  "description": "MCP server that disciplines coding agents with validation, state checkpoints, context control, AI-first Markdown mirrors, and a real 5-bot Council plus Chairman.",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -11,16 +11,23 @@
   "files": [
     "src/",
     "bin/",
+    "scripts/",
     "ai-rules/",
+    "ai-docs/",
     ".claude/skills/",
     "README.md",
+    "PROMPTS.md",
+    "opencode.json",
     "package.json"
   ],
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node --test test/*.test.js",
-    "test:watch": "node --test --watch test/*.test.js"
+    "test:watch": "node --test --watch test/*.test.js",
+    "test:smoke:council": "node test-smoke-council.mjs",
+    "docs:ai": "node scripts/export-ai-markdown.js",
+    "validate": "npm test && npm run test:smoke:council && npm run docs:ai"
   },
   "keywords": [
     "mcp",
@@ -30,7 +37,9 @@
     "llm",
     "coding-standards",
     "context-engineering",
-    "agent-runtime"
+    "agent-runtime",
+    "markdown-export",
+    "council"
   ],
   "license": "MIT",
   "dependencies": {
